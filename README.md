@@ -21,8 +21,8 @@ Azure ofrece servicios gestionados como Azure SQL Database, Data Lake Storage Ge
 
 ### 2.2 Configuración de generación
 Los parámetros de volumen, fechas y tasas de anomalías se definieron en `config.yaml`:
-
-```yaml
+```
+yaml
 seed: 42
 date_range:
   start: "2024-01-01"
@@ -43,7 +43,7 @@ anomalies:
   referential_integrity_violation_rate: 0.005
 
 ---
-
+```
 
 ## 3. Fase 2 – Infraestructura como Código (Terraform)
 
