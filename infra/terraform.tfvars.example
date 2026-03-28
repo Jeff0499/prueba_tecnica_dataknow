@@ -1,0 +1,8 @@
+environment   = "dev"
+location      = "East US 2"
+resource_group_name = "rg-prueba-tecnica"
+
+# Para el backend remoto (crea estos recursos manualmente antes)
+storage_account_name = "sttfstatejeferson"
+container_name       = "terraform-state"
+key                  = "prueba-tecnica.tfstate"
