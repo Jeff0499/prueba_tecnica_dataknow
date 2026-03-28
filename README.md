@@ -69,5 +69,5 @@ Se utilizó Terraform para aprovisionar los siguientes recursos en Azure:
 5. Ejecutar `terraform init`, `terraform plan`, `terraform apply`.
 
 ### Evidencias
-![Terraform apply output](docs/terraform-apply.png)
-![Recursos en Azure Portal](docs/azure-resources.png)
+![Terraform apply output](docs/fase2-apply-complete-terraform.png)
+![Recursos en Azure Portal](docs/fase1-captura-generacion-y-subida-de-datos.png)
