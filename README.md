@@ -167,7 +167,7 @@ Modelo analítico:
 - **Reintentos**: 3 intentos con backoff exponencial en cada actividad.
 - **Alertas**: 
   - Fallo: se envía correo al Action Group (`ag-rg-prueba-tecnica-dev`).  
-    ![Alerta de fallo](docs/alert_failure_email.png)
+    ![Alerta de fallo](docs/failed_report.png)
   - Éxito: también se envía correo de resumen (alerta de métrica).  
     ![Reporte de éxito](docs/success_report.png)
 - **Monitoreo**: dashboard con historial de ejecuciones.  
