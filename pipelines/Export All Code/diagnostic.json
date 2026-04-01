@@ -1,7 +1,7 @@
 {
-    "now": "2026-04-01T18:06:23.483Z",
-    "perfNow": 13033890.900000095,
-    "diagnosticCorrelation": "ffaf8b67-b3bd-46e5-9a15-f1498e4268ca",
+    "now": "2026-04-01T19:38:24.253Z",
+    "perfNow": 18554661.100000143,
+    "diagnosticCorrelation": "fe9d134b-52b0-4263-98c3-f9da160c4545",
     "source": "DownloadSupportFiles",
     "environment": {
         "productName": "adf",
@@ -11,7 +11,7 @@
         "resourceRegion": "eastus2",
         "resourceGroup": "rg-prueba-tecnica",
         "subscriptionId": "0160725b-444c-4f65-a2c3-9dcb95f5957f",
-        "sessionId": "maeKwjqNtuXzC4+BK82dM/",
+        "sessionId": "ve8Yv/3yIPwRl0UuGeHL//",
         "operationId": "",
         "gitType": "live",
         "loggingKey": "1457bb66-6e2b-40d6-8925-8301223b6382"

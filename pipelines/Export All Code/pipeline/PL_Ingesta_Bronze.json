@@ -89,7 +89,7 @@
                                 "source": {
                                     "type": "AzureSqlSource",
                                     "sqlReaderQuery": {
-                                        "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > @{variables('v_watermarkValue')}",
+                                        "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > '@{variables('v_watermarkValue')}'",
                                         "type": "Expression"
                                     },
                                     "queryTimeout": "02:00:00",

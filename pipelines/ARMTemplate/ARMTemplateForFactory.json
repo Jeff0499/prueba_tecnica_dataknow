@@ -37,6 +37,231 @@
     },
     "resources": [
         {
+            "name": "[concat(parameters('factoryName'), '/DS_Bronze_Parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.parquet",
+                        "folderPath": {
+                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "bronze"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_SQL_PruebaTecnica')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureSQL_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [],
+                "typeProperties": {
+                    "schema": "",
+                    "table": {
+                        "value": "@dataset().tableName",
+                        "type": "Expression"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Watermark')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureSQL_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [
+                    {
+                        "name": "TableName",
+                        "type": "nvarchar"
+                    },
+                    {
+                        "name": "WatermarkValue",
+                        "type": "nvarchar"
+                    },
+                    {
+                        "name": "LastUpdate",
+                        "type": "datetime",
+                        "precision": 23,
+                        "scale": 3
+                    }
+                ],
+                "typeProperties": {
+                    "schema": "dbo",
+                    "table": "watermark"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Silver_Parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.parquet",
+                        "folderPath": {
+                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "silver"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Gold_Parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.parquet",
+                        "folderPath": {
+                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "gold"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_catch_errors')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "errors.parquet",
+                        "folderPath": "errors",
+                        "fileSystem": "silver"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Silver_Quality_CSV')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.csv",
+                        "folderPath": {
+                            "value": "logs",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "silver"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
             "name": "[concat(parameters('factoryName'), '/PL_Ingesta_Bronze')]",
             "type": "Microsoft.DataFactory/factories/pipelines",
             "apiVersion": "2018-06-01",
@@ -130,7 +355,7 @@
                                         "source": {
                                             "type": "AzureSqlSource",
                                             "sqlReaderQuery": {
-                                                "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > @{variables('v_watermarkValue')}",
+                                                "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > '@{variables('v_watermarkValue')}'",
                                                 "type": "Expression"
                                             },
                                             "queryTimeout": "02:00:00",
@@ -203,7 +428,7 @@
                                         "source": {
                                             "type": "AzureSqlSource",
                                             "sqlReaderQuery": {
-                                                "value": "SELECT MAX(@{item().watermarkCol}) AS newWatermark FROM @{item().name} WHERE @{item().watermarkCol} > @{variables('v_watermarkValue')}",
+                                                "value": "SELECT MAX(@{item().watermarkCol}) AS newWatermark FROM @{item().name} WHERE @{item().watermarkCol} > '@{variables('v_watermarkValue')}'",
                                                 "type": "Expression"
                                             },
                                             "queryTimeout": "02:00:00",
@@ -266,6 +491,67 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "name": "Correo Success",
+                        "type": "WebActivity",
+                        "dependsOn": [
+                            {
+                                "activity": "ForEach1",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "method": "POST",
+                            "headers": {},
+                            "url": {
+                                "value": "https://prod-43.eastus2.logic.azure.com:443/workflows/0b9dcbf9304b4ccea0ae0630fe3e74a7/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=gE2ern_v_dYg7wEHYxiXYBocDuKYqyak6Wex5iaAddU",
+                                "type": "Expression"
+                            },
+                            "body": {
+                                "value": "{\n  \"pipelineName\": \"PL_Ingesta_Bronze\",\n  \"status\": \"Correcto\",\n  \"fecha\": \"@{utcNow()}\"\n}",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    {
+                        "name": "Correo failed",
+                        "type": "WebActivity",
+                        "dependsOn": [
+                            {
+                                "activity": "ForEach1",
+                                "dependencyConditions": [
+                                    "Failed"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "method": "POST",
+                            "headers": {},
+                            "url": "https://prod-43.eastus2.logic.azure.com:443/workflows/0b9dcbf9304b4ccea0ae0630fe3e74a7/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=gE2ern_v_dYg7wEHYxiXYBocDuKYqyak6Wex5iaAddU",
+                            "body": {
+                                "value": "{\n  \"pipelineName\": \"PL_Ingesta_Bronze\",\n  \"status\": \"Fallo\",\n  \"fecha\": \"@{utcNow()}\"\n}",
+                                "type": "Expression"
+                            }
+                        }
                     }
                 ],
                 "policy": {
@@ -313,7 +599,7 @@
                     }
                 },
                 "annotations": [],
-                "lastPublishTime": "2026-03-28T02:33:07Z"
+                "lastPublishTime": "2026-04-01T04:04:02Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/datasets/DS_Watermark')]",
@@ -674,8 +960,6 @@
                     {
                         "name": "DF_Gold_dim_remitentes",
                         "type": "ExecuteDataFlow",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
                         "dependsOn": [],
                         "policy": {
                             "timeout": "0.12:00:00",
@@ -710,8 +994,6 @@
                     {
                         "name": "DF_Gold_fact_envios",
                         "type": "ExecuteDataFlow",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
                         "dependsOn": [
                             {
                                 "activity": "DF_Gold_dim_remitentes",
@@ -1013,7 +1295,7 @@
                     "elapsedTimeMetric": {}
                 },
                 "annotations": [],
-                "lastPublishTime": "2026-03-31T20:26:42Z"
+                "lastPublishTime": "2026-04-01T04:30:29Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/dataflows/DF_Gold_dim_remitentes')]",
@@ -1089,242 +1371,226 @@
                     "elapsedTimeMetric": {}
                 },
                 "annotations": [],
-                "lastPublishTime": "2026-03-31T23:49:04Z"
+                "lastPublishTime": "2026-04-01T02:26:40Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/dataflows/DF_Quality_Checks')]"
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/LS_AzureSQL_PruebaTecnica')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "name": "[concat(parameters('factoryName'), '/PL_Execute_Quality_Silver')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
             "apiVersion": "2018-06-01",
             "properties": {
-                "annotations": [],
-                "type": "AzureSqlDatabase",
-                "typeProperties": {
-                    "server": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_server')]",
-                    "database": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_database')]",
-                    "encrypt": "mandatory",
-                    "trustServerCertificate": false,
-                    "authenticationType": "SQL",
-                    "userName": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_userName')]",
-                    "password": {
-                        "type": "SecureString",
-                        "value": "[parameters('LS_AzureSQL_PruebaTecnica_password')]"
-                    }
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/LS_ADLS_PruebaTecnica')]",
-            "type": "Microsoft.DataFactory/factories/linkedServices",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "annotations": [],
-                "type": "AzureBlobFS",
-                "typeProperties": {
-                    "url": "[parameters('LS_ADLS_PruebaTecnica_properties_typeProperties_url')]",
-                    "accountKey": {
-                        "type": "SecureString",
-                        "value": "[parameters('LS_ADLS_PruebaTecnica_accountKey')]"
-                    }
-                }
-            },
-            "dependsOn": []
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/DS_Bronze_Parquet')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_ADLS_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
-                "parameters": {
-                    "tableName": {
-                        "type": "string"
-                    }
-                },
-                "annotations": [],
-                "type": "Parquet",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "fileName": "data.parquet",
-                        "folderPath": {
-                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
-                            "type": "Expression"
+                "activities": [
+                    {
+                        "name": "Data flow1",
+                        "type": "ExecuteDataFlow",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "0.12:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
                         },
-                        "fileSystem": "bronze"
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/DS_SQL_PruebaTecnica')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_AzureSQL_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
-                "parameters": {
-                    "tableName": {
-                        "type": "string"
-                    }
-                },
-                "annotations": [],
-                "type": "AzureSqlTable",
-                "schema": [],
-                "typeProperties": {
-                    "schema": "",
-                    "table": {
-                        "value": "@dataset().tableName",
-                        "type": "Expression"
-                    }
-                }
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/DS_Watermark')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_AzureSQL_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
-                "annotations": [],
-                "type": "AzureSqlTable",
-                "schema": [
-                    {
-                        "name": "TableName",
-                        "type": "nvarchar"
-                    },
-                    {
-                        "name": "WatermarkValue",
-                        "type": "nvarchar"
-                    },
-                    {
-                        "name": "LastUpdate",
-                        "type": "datetime",
-                        "precision": 23,
-                        "scale": 3
+                        "userProperties": [],
+                        "typeProperties": {
+                            "dataflow": {
+                                "referenceName": "DF_Silver_Quality_Report",
+                                "type": "DataFlowReference",
+                                "parameters": {},
+                                "datasetParameters": {
+                                    "source1": {
+                                        "tableName": "OPE_CONDUCTORES"
+                                    },
+                                    "source2": {
+                                        "tableName": "TMS_ENVIOS"
+                                    },
+                                    "sink1": {}
+                                }
+                            },
+                            "staging": {},
+                            "compute": {
+                                "coreCount": 8,
+                                "computeType": "General"
+                            },
+                            "traceLevel": "Fine"
+                        }
                     }
                 ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-04-01T01:19:47Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/dataflows/DF_Silver_Quality_Report')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Master_Orchestrator')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "PL_Ingesta_Bronze",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Ingesta_Bronze",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Silver_AllTables",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Ingesta_Bronze",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Silver_AllTables",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Gold_AllTables",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Silver_AllTables",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Gold_AllTables",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Execute_Quality_Checks",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Gold_AllTables",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Execute_Quality_Checks",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Execute_Quality_Silver",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Execute_Quality_Checks",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Execute_Quality_Silver",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-04-01T05:35:46Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/PL_Ingesta_Bronze')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Silver_AllTables')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Gold_AllTables')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Execute_Quality_Checks')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Execute_Quality_Silver')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/triggerOrchestrator')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "PL_Master_Orchestrator",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
                 "typeProperties": {
-                    "schema": "dbo",
-                    "table": "watermark"
+                    "recurrence": {
+                        "frequency": "Minute",
+                        "interval": 15,
+                        "startTime": "2026-04-01T02:27:00",
+                        "timeZone": "SA Pacific Standard Time"
+                    }
                 }
             },
             "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/DS_Silver_Parquet')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_ADLS_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
-                "parameters": {
-                    "tableName": {
-                        "type": "string"
-                    }
-                },
-                "annotations": [],
-                "type": "Parquet",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "fileName": "data.parquet",
-                        "folderPath": {
-                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
-                            "type": "Expression"
-                        },
-                        "fileSystem": "silver"
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/DS_Gold_Parquet')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_ADLS_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
-                "parameters": {
-                    "tableName": {
-                        "type": "string"
-                    }
-                },
-                "annotations": [],
-                "type": "Parquet",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "fileName": "data.parquet",
-                        "folderPath": {
-                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
-                            "type": "Expression"
-                        },
-                        "fileSystem": "gold"
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
-            ]
-        },
-        {
-            "name": "[concat(parameters('factoryName'), '/DS_catch_errors')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
-            "apiVersion": "2018-06-01",
-            "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_ADLS_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
-                "annotations": [],
-                "type": "Parquet",
-                "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "fileName": "errors.parquet",
-                        "folderPath": "errors",
-                        "fileSystem": "silver"
-                    },
-                    "compressionCodec": "snappy"
-                },
-                "schema": []
-            },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+                "[concat(variables('factoryId'), '/pipelines/PL_Master_Orchestrator')]"
             ]
         },
         {
@@ -1393,6 +1659,7 @@
                         "derivedColumn1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1604,6 +1871,7 @@
                         "select2 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1613,6 +1881,7 @@
                         "split1@invalidos sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['errors.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1699,6 +1968,7 @@
                         "derivedColumn1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1776,6 +2046,7 @@
                         "derivedColumn1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1857,6 +2128,7 @@
                         "derivedColumn1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1930,6 +2202,7 @@
                         "derivedColumn1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2005,6 +2278,7 @@
                         "derivedColumn1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2097,6 +2371,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2185,6 +2460,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2269,6 +2545,7 @@
                         "derivedColumn3 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2413,6 +2690,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2520,11 +2798,13 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
                         "     skipDuplicateMapInputs: true,",
-                        "     skipDuplicateMapOutputs: true) ~> sink1"
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
                     ]
                 }
             },
@@ -2736,6 +3016,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -2909,6 +3190,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3036,6 +3318,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3232,6 +3515,7 @@
                         "assertTiempo sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_tiempo.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3241,6 +3525,7 @@
                         "assertCategoria sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_categorias.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3250,6 +3535,7 @@
                         "assertCondNull sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_cond_null.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3259,6 +3545,7 @@
                         "assertAntiguedad sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_antiguedad.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3268,6 +3555,7 @@
                         "assertScore sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_score.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3410,6 +3698,7 @@
                         "     skipDuplicateMapOutputs: true) ~> select1",
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
+                        "     partitionFileNames:['data.csv'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -3425,87 +3714,43 @@
             ]
         },
         {
-            "name": "[concat(parameters('factoryName'), '/DS_Silver_Quality_CSV')]",
-            "type": "Microsoft.DataFactory/factories/datasets",
+            "name": "[concat(parameters('factoryName'), '/LS_AzureSQL_PruebaTecnica')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
-                "linkedServiceName": {
-                    "referenceName": "LS_ADLS_PruebaTecnica",
-                    "type": "LinkedServiceReference"
-                },
                 "annotations": [],
-                "type": "DelimitedText",
+                "type": "AzureSqlDatabase",
                 "typeProperties": {
-                    "location": {
-                        "type": "AzureBlobFSLocation",
-                        "fileName": "data.csv",
-                        "folderPath": {
-                            "value": "logs",
-                            "type": "Expression"
-                        },
-                        "fileSystem": "silver"
-                    },
-                    "columnDelimiter": ",",
-                    "escapeChar": "\\",
-                    "firstRowAsHeader": true,
-                    "quoteChar": "\""
-                },
-                "schema": []
+                    "server": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_server')]",
+                    "database": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_database')]",
+                    "encrypt": "mandatory",
+                    "trustServerCertificate": false,
+                    "authenticationType": "SQL",
+                    "userName": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_userName')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[parameters('LS_AzureSQL_PruebaTecnica_password')]"
+                    }
+                }
             },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
-            ]
+            "dependsOn": []
         },
         {
-            "name": "[concat(parameters('factoryName'), '/PL_Execute_Quality_Silver')]",
-            "type": "Microsoft.DataFactory/factories/pipelines",
+            "name": "[concat(parameters('factoryName'), '/LS_ADLS_PruebaTecnica')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
             "apiVersion": "2018-06-01",
             "properties": {
-                "activities": [
-                    {
-                        "name": "Data flow1",
-                        "type": "ExecuteDataFlow",
-                        "dependsOn": [],
-                        "policy": {
-                            "timeout": "0.12:00:00",
-                            "retry": 0,
-                            "retryIntervalInSeconds": 30,
-                            "secureOutput": false,
-                            "secureInput": false
-                        },
-                        "userProperties": [],
-                        "typeProperties": {
-                            "dataflow": {
-                                "referenceName": "DF_Silver_Quality_Report",
-                                "type": "DataFlowReference",
-                                "parameters": {},
-                                "datasetParameters": {
-                                    "source1": {
-                                        "tableName": "OPE_CONDUCTORES"
-                                    },
-                                    "source2": {
-                                        "tableName": "TMS_ENVIOS"
-                                    },
-                                    "sink1": {}
-                                }
-                            },
-                            "staging": {},
-                            "compute": {
-                                "coreCount": 8,
-                                "computeType": "General"
-                            },
-                            "traceLevel": "Fine"
-                        }
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('LS_ADLS_PruebaTecnica_properties_typeProperties_url')]",
+                    "accountKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('LS_ADLS_PruebaTecnica_accountKey')]"
                     }
-                ],
-                "policy": {
-                    "elapsedTimeMetric": {}
-                },
-                "annotations": []
+                }
             },
-            "dependsOn": [
-                "[concat(variables('factoryId'), '/dataflows/DF_Silver_Quality_Report')]"
-            ]
+            "dependsOn": []
         }
     ]
 }

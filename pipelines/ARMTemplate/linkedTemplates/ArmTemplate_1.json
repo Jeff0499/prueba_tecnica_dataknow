@@ -142,6 +142,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -246,11 +247,13 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
                         "     skipDuplicateMapInputs: true,",
-                        "     skipDuplicateMapOutputs: true) ~> sink1"
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
                     ]
                 }
             },
@@ -459,6 +462,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -629,6 +633,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -753,6 +758,7 @@
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['data.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -947,6 +953,7 @@
                         "assertTiempo sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_tiempo.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -956,6 +963,7 @@
                         "assertCategoria sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_categorias.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -965,6 +973,7 @@
                         "assertCondNull sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_cond_null.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -974,6 +983,7 @@
                         "assertAntiguedad sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_antiguedad.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -983,6 +993,7 @@
                         "assertScore sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
                         "     format: 'parquet',",
+                        "     partitionFileNames:['logs/quality_check_score.parquet'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1123,6 +1134,7 @@
                         "     skipDuplicateMapOutputs: true) ~> select1",
                         "select1 sink(allowSchemaDrift: true,",
                         "     validateSchema: false,",
+                        "     partitionFileNames:['data.csv'],",
                         "     umask: 0022,",
                         "     preCommands: [],",
                         "     postCommands: [],",
@@ -1478,8 +1490,6 @@
                     {
                         "name": "DF_Gold_dim_remitentes",
                         "type": "ExecuteDataFlow",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
                         "dependsOn": [],
                         "policy": {
                             "timeout": "0.12:00:00",
@@ -1514,8 +1524,6 @@
                     {
                         "name": "DF_Gold_fact_envios",
                         "type": "ExecuteDataFlow",
-                        "state": "Inactive",
-                        "onInactiveMarkAs": "Succeeded",
                         "dependsOn": [
                             {
                                 "activity": "DF_Gold_dim_remitentes",
@@ -1817,7 +1825,7 @@
                     "elapsedTimeMetric": {}
                 },
                 "annotations": [],
-                "lastPublishTime": "2026-03-31T20:26:42Z"
+                "lastPublishTime": "2026-04-01T04:30:29Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/dataflows/DF_Gold_fact_envios')]",
@@ -1890,7 +1898,7 @@
                     "elapsedTimeMetric": {}
                 },
                 "annotations": [],
-                "lastPublishTime": "2026-03-31T23:49:04Z"
+                "lastPublishTime": "2026-04-01T02:26:40Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/dataflows/DF_Quality_Checks')]"
@@ -1941,10 +1949,174 @@
                 "policy": {
                     "elapsedTimeMetric": {}
                 },
-                "annotations": []
+                "annotations": [],
+                "lastPublishTime": "2026-04-01T01:19:47Z"
             },
             "dependsOn": [
                 "[concat(variables('factoryId'), '/dataflows/DF_Silver_Quality_Report')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Master_Orchestrator')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "PL_Ingesta_Bronze",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Ingesta_Bronze",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Silver_AllTables",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Ingesta_Bronze",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Silver_AllTables",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Gold_AllTables",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Silver_AllTables",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Gold_AllTables",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Execute_Quality_Checks",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Gold_AllTables",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Execute_Quality_Checks",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    },
+                    {
+                        "name": "PL_Execute_Quality_Silver",
+                        "type": "ExecutePipeline",
+                        "dependsOn": [
+                            {
+                                "activity": "PL_Execute_Quality_Checks",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "PL_Execute_Quality_Silver",
+                                "type": "PipelineReference"
+                            },
+                            "waitOnCompletion": true,
+                            "parameters": {}
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-04-01T05:35:46Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/PL_Silver_AllTables')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Gold_AllTables')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Execute_Quality_Checks')]",
+                "[concat(variables('factoryId'), '/pipelines/PL_Execute_Quality_Silver')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/triggerOrchestrator')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Stopped",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "PL_Master_Orchestrator",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Minute",
+                        "interval": 15,
+                        "startTime": "2026-04-01T02:27:00",
+                        "timeZone": "SA Pacific Standard Time"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/pipelines/PL_Master_Orchestrator')]"
             ]
         }
     ]
