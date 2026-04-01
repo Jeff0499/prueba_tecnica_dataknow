@@ -9,8 +9,7 @@
 Azure ofrece servicios gestionados como:
 - Azure SQL Database  
 - Data Lake Storage Gen2  
-- Data Factory  
-- Databricks  
+- Data Factory 
 
 Esto permite construir una solución **escalable, segura y con gobierno de datos integrado**.
 
