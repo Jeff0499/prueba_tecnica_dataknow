@@ -25,6 +25,8 @@ Esto permite construir una solución **escalable, segura y con gobierno de datos
   - `Faker` → datos realistas
   - `hashlib` → enmascaramiento
   - `pyyaml` → configuración
+ 
+- Entorno Virtual: Spyder 6
 
 **Formato de salida:** CSV y Parquet
 
