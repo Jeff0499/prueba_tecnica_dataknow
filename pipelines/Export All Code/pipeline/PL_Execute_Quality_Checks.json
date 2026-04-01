@@ -1,0 +1,60 @@
+{
+    "name": "PL_Execute_Quality_Checks",
+    "properties": {
+        "activities": [
+            {
+                "name": "DF_Quality_Checks",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Quality_Checks",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "factEnvios": {
+                                "tableName": "fact_envios"
+                            },
+                            "dimConductores": {
+                                "tableName": "dim_conductores"
+                            },
+                            "factDesempenoConductor": {
+                                "tableName": "fact_desempeno_conductor"
+                            },
+                            "sink3": {
+                                "tableName": "logs/quality_check_tiempo"
+                            },
+                            "sink1": {
+                                "tableName": "logs/quality_check_categorias"
+                            },
+                            "sink2": {
+                                "tableName": "logs/quality_check_cond_null"
+                            },
+                            "sink4": {
+                                "tableName": "logs/quality_check_antiguedad"
+                            },
+                            "sink5": {
+                                "tableName": "logs/quality_check_score"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2026-04-01T02:26:40Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

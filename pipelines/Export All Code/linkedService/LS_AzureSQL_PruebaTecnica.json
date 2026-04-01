@@ -1,0 +1,17 @@
+{
+    "name": "LS_AzureSQL_PruebaTecnica",
+    "type": "Microsoft.DataFactory/factories/linkedservices",
+    "properties": {
+        "annotations": [],
+        "type": "AzureSqlDatabase",
+        "typeProperties": {
+            "server": "pruebadataknow.database.windows.net",
+            "database": "prueba_tecnica",
+            "encrypt": "mandatory",
+            "trustServerCertificate": false,
+            "authenticationType": "SQL",
+            "userName": "CloudSA7995543c",
+            "encryptedCredential": "ew0KICAiVmVyc2lvbiI6ICIyMDE3LTExLTMwIiwNCiAgIlByb3RlY3Rpb25Nb2RlIjogIktleSIsDQogICJTZWNyZXRDb250ZW50VHlwZSI6ICJQbGFpbnRleHQiLA0KICAiQ3JlZGVudGlhbElkIjogIkRBVEFGQUNUT1JZQEU3QjEyQzc3LUYyOUItNENEOS1BRTE1LURERDJCMDI1QUJFRl8xMzVmOWI4NS02ZGYwLTRhOWEtYTQ1MC0xZDU1NGI0NTNjN2UiDQp9"
+        }
+    }
+}

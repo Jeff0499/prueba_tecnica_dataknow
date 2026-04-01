@@ -158,3 +158,18 @@ Modelo analítico:
   - `fact_alertas_zona`
 
 ---
+
+
+## 5. Fase 4 – Orquestación
+
+- **Pipeline maestro**: `PL_Master_Orchestrator` ejecuta en serie los pipelines de Bronze, Silver, Gold y calidad.
+- **Programación**: trigger diario a las 02:00 (hora local).
+- **Reintentos**: 3 intentos con backoff exponencial en cada actividad.
+- **Alertas**: 
+  - Fallo: se envía correo al Action Group (`ag-rg-prueba-tecnica-dev`).  
+    ![Alerta de fallo](docs/alert_failure_email.png)
+  - Éxito: también se envía correo de resumen (alerta de métrica).  
+    ![Reporte de éxito](docs/success_report.png)
+- **Monitoreo**: dashboard con historial de ejecuciones.  
+  ![Monitor](docs/monitor_dashboard.png)
+- **Código**: definición del pipeline en [`pipelines/Export All Code/diagnostic.json`](pipelines/Export All Code/diagnostic.json).

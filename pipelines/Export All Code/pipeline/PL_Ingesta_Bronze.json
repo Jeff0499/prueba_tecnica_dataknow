@@ -1,0 +1,275 @@
+{
+    "name": "PL_Ingesta_Bronze",
+    "properties": {
+        "activities": [
+            {
+                "name": "ForEach1",
+                "type": "ForEach",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@variables('v_tableNames')",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "Lookup Watermark",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "SELECT WatermarkValue FROM dbo.watermark WHERE TableName = '@{item().name}'",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_Watermark",
+                                    "type": "DatasetReference"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set Watermark",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Watermark",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "v_watermarkValue",
+                                "value": {
+                                    "value": "@activity('Lookup Watermark').output.firstRow.WatermarkValue",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "copy1",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set Watermark",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > '@{variables('v_watermarkValue')}'",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DS_SQL_PruebaTecnica",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "tableName": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "DS_Bronze_Parquet",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "tableName": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Lookup New Watermark",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "copy1",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "AzureSqlSource",
+                                    "sqlReaderQuery": {
+                                        "value": "SELECT MAX(@{item().watermarkCol}) AS newWatermark FROM @{item().name} WHERE @{item().watermarkCol} > '@{variables('v_watermarkValue')}'",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "DS_SQL_PruebaTecnica",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "tableName": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update Watermark",
+                            "type": "SqlServerStoredProcedure",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup New Watermark",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "storedProcedureName": "[dbo].[UpdateWatermark]",
+                                "storedProcedureParameters": {
+                                    "NewWatermark": {
+                                        "value": {
+                                            "value": "@variables('v_newWatermark')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    },
+                                    "TableName": {
+                                        "value": {
+                                            "value": "@item().name",
+                                            "type": "Expression"
+                                        },
+                                        "type": "String"
+                                    }
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "LS_AzureSQL_PruebaTecnica",
+                                "type": "LinkedServiceReference"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "variables": {
+            "v_tableNames": {
+                "type": "Array",
+                "defaultValue": [
+                    {
+                        "name": "OPE_CONDUCTORES",
+                        "watermarkCol": "cond_id"
+                    },
+                    {
+                        "name": "CLI_REMITENTES",
+                        "watermarkCol": "id_remitente"
+                    },
+                    {
+                        "name": "GEO_ZONAS",
+                        "watermarkCol": "id_zona"
+                    },
+                    {
+                        "name": "TMS_ENVIOS",
+                        "watermarkCol": "id_envio"
+                    },
+                    {
+                        "name": "GPS_RUTAS",
+                        "watermarkCol": "id_ruta"
+                    },
+                    {
+                        "name": "CAL_DESTINATARIOS",
+                        "watermarkCol": "id_calificacion"
+                    },
+                    {
+                        "name": "DIR_NOVEDADES",
+                        "watermarkCol": "id_novedad"
+                    }
+                ]
+            },
+            "v_watermarkValue": {
+                "type": "String"
+            },
+            "v_newWatermark": {
+                "type": "String"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-04-01T04:04:02Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

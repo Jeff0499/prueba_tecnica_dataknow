@@ -1,0 +1,83 @@
+{
+    "name": "DF_Gold_dim_remitentes",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "source1"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink1"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "MapDrifted1",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> source1",
+                "source1 derive(razon_social = toString(byName('razon_social')),",
+                "          tipo_cliente = toString(byName('tipo_cliente')),",
+                "          ciudad_principal = toString(byName('ciudad_principal')),",
+                "          sla_entrega_horas = toLong(byName('sla_entrega_horas')),",
+                "          penalidad_porc = toLong(byName('penalidad_porc')),",
+                "          activo = toLong(byName('activo')),",
+                "          id_remitente = toLong(byName('id_remitente'))) ~> MapDrifted1",
+                "MapDrifted1 derive(tipo_cliente_std = iif(tipo_cliente == 'Ecommerce', 'Ecommerce',\r",
+                "  iif(tipo_cliente == 'Farmaceutico', 'Farmaceutico',\r",
+                "    iif(tipo_cliente == 'Retail', 'Retail',\r",
+                "      iif(tipo_cliente == 'Telecomunicaciones', 'Telecomunicaciones',\r",
+                "        'Otro'\r",
+                "      )\r",
+                "    )\r",
+                "  )\r",
+                "),",
+                "          sla_entrega_horas_clean = coalesce(sla_entrega_horas, 24)) ~> derivedColumn1",
+                "derivedColumn1 select(mapColumn(",
+                "          id_remitente,",
+                "          razon_social,",
+                "          tipo_cliente_std,",
+                "          ciudad_principal,",
+                "          sla_entrega_horas_clean,",
+                "          penalidad_porc,",
+                "          activo",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['data.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink1"
+            ]
+        }
+    }
+}

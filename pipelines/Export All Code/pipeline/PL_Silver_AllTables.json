@@ -1,0 +1,315 @@
+{
+    "name": "PL_Silver_AllTables",
+    "properties": {
+        "activities": [
+            {
+                "name": "ForEach Tablas",
+                "type": "ForEach",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@variables('v_tables')",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "Switch Table",
+                            "type": "Switch",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "on": {
+                                    "value": "@item()",
+                                    "type": "Expression"
+                                },
+                                "cases": [
+                                    {
+                                        "value": "OPE_CONDUCTORES",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow1",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_OPE_CONDUCTORES",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "OPE_CONDUCTORES"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "OPE_CONDUCTORES"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "CLI_REMITENTES",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow2",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_CLI_REMITENTES",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "CLI_REMITENTES"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "CLI_REMITENTES"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "GEO_ZONAS",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow3",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_GEO_ZONAS",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "GEO_ZONAS"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "GEO_ZONAS"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "TMS_ENVIOS",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow4",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_TMS_ENVIOS",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "TMS_ENVIOS"
+                                                            },
+                                                            "source2": {
+                                                                "tableName": "OPE_CONDUCTORES"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "TMS_ENVIOS"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "GPS_RUTAS",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow5",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_GPS_RUTAS",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "GPS_RUTAS"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "GPS_RUTAS"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "CAL_DESTINATARIOS",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow6",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_CAL_DESTINATARIOS",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "CAL_DESTINATARIOS"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "CAL_DESTINATARIOS"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "DIR_NOVEDADES",
+                                        "activities": [
+                                            {
+                                                "name": "Data flow7",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "DF_Silver_DIR_NOVEDADES",
+                                                        "type": "DataFlowReference",
+                                                        "datasetParameters": {
+                                                            "source1": {
+                                                                "tableName": "DIR_NOVEDADES"
+                                                            },
+                                                            "sink1": {
+                                                                "tableName": "DIR_NOVEDADES"
+                                                            }
+                                                        }
+                                                    },
+                                                    "compute": {
+                                                        "coreCount": 8,
+                                                        "computeType": "General"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "variables": {
+            "v_tables": {
+                "type": "Array",
+                "defaultValue": [
+                    "OPE_CONDUCTORES",
+                    "CLI_REMITENTES",
+                    "GEO_ZONAS",
+                    "TMS_ENVIOS",
+                    "GPS_RUTAS",
+                    "CAL_DESTINATARIOS",
+                    "DIR_NOVEDADES"
+                ]
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-03-31T23:56:27Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

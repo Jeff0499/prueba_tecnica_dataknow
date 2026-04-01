@@ -1,0 +1,22 @@
+{
+    "name": "DS_catch_errors",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_ADLS_PruebaTecnica",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": "errors.parquet",
+                "folderPath": "errors",
+                "fileSystem": "silver"
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

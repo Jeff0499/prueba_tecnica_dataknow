@@ -1,0 +1,118 @@
+{
+    "name": "PL_Master_Orchestrator",
+    "properties": {
+        "activities": [
+            {
+                "name": "PL_Ingesta_Bronze",
+                "type": "ExecutePipeline",
+                "dependsOn": [],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Ingesta_Bronze",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "PL_Silver_AllTables",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "PL_Ingesta_Bronze",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Silver_AllTables",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "PL_Gold_AllTables",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "PL_Silver_AllTables",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Gold_AllTables",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "PL_Execute_Quality_Checks",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "PL_Gold_AllTables",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Execute_Quality_Checks",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            },
+            {
+                "name": "PL_Execute_Quality_Silver",
+                "type": "ExecutePipeline",
+                "dependsOn": [
+                    {
+                        "activity": "PL_Execute_Quality_Checks",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "pipeline": {
+                        "referenceName": "PL_Execute_Quality_Silver",
+                        "type": "PipelineReference"
+                    },
+                    "waitOnCompletion": true
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2026-04-01T05:35:46Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

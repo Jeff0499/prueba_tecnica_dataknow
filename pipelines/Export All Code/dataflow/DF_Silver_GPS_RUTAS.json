@@ -1,0 +1,76 @@
+{
+    "name": "DF_Silver_GPS_RUTAS",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Bronze_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "source1"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink1"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "MapDrifted1",
+                    "description": "Creates an explicit mapping for each drifted column"
+                }
+            ],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> source1",
+                "MapDrifted1 aggregate(groupBy(cond_id,",
+                "          fec_ruta,",
+                "          hra_inicio,",
+                "          hra_fin,",
+                "          km_recorridos,",
+                "          num_paradas_plan,",
+                "          num_paradas_real,",
+                "          desviacion_ruta_km,",
+                "          consumo_combustible),",
+                "     id_ruta = first(id_ruta)) ~> aggregate1",
+                "aggregate1 derive(desviacion_ruta_km = coalesce(desviacion_ruta_km, 0.0)) ~> derivedColumn1",
+                "source1 derive(id_ruta = toLong(byName('id_ruta')),",
+                "          cond_id = toLong(byName('cond_id')),",
+                "          fec_ruta = toString(byName('fec_ruta')),",
+                "          hra_inicio = toString(byName('hra_inicio')),",
+                "          hra_fin = toString(byName('hra_fin')),",
+                "          km_recorridos = toDouble(byName('km_recorridos')),",
+                "          num_paradas_plan = toLong(byName('num_paradas_plan')),",
+                "          num_paradas_real = toLong(byName('num_paradas_real')),",
+                "          desviacion_ruta_km = toDouble(byName('desviacion_ruta_km')),",
+                "          consumo_combustible = toDouble(byName('consumo_combustible'))) ~> MapDrifted1",
+                "derivedColumn1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['data.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink1"
+            ]
+        }
+    }
+}

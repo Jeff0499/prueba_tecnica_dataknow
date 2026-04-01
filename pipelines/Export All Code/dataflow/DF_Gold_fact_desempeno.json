@@ -1,0 +1,212 @@
+{
+    "name": "DF_Gold_fact_desempeno",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "TmsEnvios"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "GpsRutas"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "CalDestinatarios"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink1"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "MapDrifted1",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "MapDrifted2",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "MapDrifted3",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "derivedColumn2"
+                },
+                {
+                    "name": "derivedColumn3"
+                },
+                {
+                    "name": "derivedColumn4"
+                },
+                {
+                    "name": "derivedColumn5"
+                },
+                {
+                    "name": "joinTmsGps"
+                },
+                {
+                    "name": "joinAll"
+                },
+                {
+                    "name": "aggDaily"
+                },
+                {
+                    "name": "windowNorm"
+                },
+                {
+                    "name": "derivedColumn6"
+                },
+                {
+                    "name": "derivedColumn7"
+                },
+                {
+                    "name": "derivedColumn8"
+                },
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> TmsEnvios",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> GpsRutas",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> CalDestinatarios",
+                "TmsEnvios derive(cond_id = toLong(byName('cond_id')),",
+                "          id_envio = toLong(byName('id_envio')),",
+                "          estado_final = toString(byName('estado_final')),",
+                "          fec_entrega_real = toString(byName('fec_entrega_real')),",
+                "          fec_recepcion = toString(byName('fec_recepcion')),",
+                "          resultado_intento1 = toString(byName('resultado_intento1')),",
+                "          resultado_intento2 = toString(byName('resultado_intento2')),",
+                "          fec_intento1 = toString(byName('fec_intento1')),",
+                "          fec_intento2 = toString(byName('fec_intento2'))) ~> MapDrifted1",
+                "GpsRutas derive(cond_id = toLong(byName('cond_id')),",
+                "          fec_ruta = toDate(byName('fec_ruta')),",
+                "          num_paradas_plan = toLong(byName('num_paradas_plan')),",
+                "          num_paradas_real = toLong(byName('num_paradas_real')),",
+                "          km_recorridos = toDouble(byName('km_recorridos')),",
+                "          hra_inicio = toString(byName('hra_inicio')),",
+                "          hra_fin = toString(byName('hra_fin')),",
+                "          desviacion_ruta_km = toDouble(byName('desviacion_ruta_km'))) ~> MapDrifted2",
+                "CalDestinatarios derive(cond_id = toLong(byName('cond_id')),",
+                "          fec_calificacion = toDate(byName('fec_calificacion')),",
+                "          puntualidad = toLong(byName('puntualidad')),",
+                "          cortesia = toLong(byName('cortesia')),",
+                "          comentario = toString(byName('comentario'))) ~> MapDrifted3",
+                "MapDrifted1 derive(fec_entrega_real_date = toDate(fec_entrega_real),",
+                "          fec_recepcion_date = toDate(fec_recepcion),",
+                "          entregado_flag = iif(estado_final == 'Entregado', 1, 0),",
+                "          intentos = iif(isNull(fec_intento2), 1, 2)) ~> derivedColumn1",
+                "MapDrifted2 derive(num_paradas_plan_clean = coalesce(num_paradas_plan, 1),",
+                "          num_paradas_real_clean = coalesce(num_paradas_real, 0),",
+                "          km_recorridos_clean = coalesce(km_recorridos, 0.0),",
+                "          horas_trabajadas = iif( (toTimestamp(hra_fin, 'HH:mm:ss') - toTimestamp(hra_inicio, 'HH:mm:ss')) < 0,\r",
+                "     (toTimestamp(hra_fin, 'HH:mm:ss') - toTimestamp(hra_inicio, 'HH:mm:ss') + 86400) / 3600,\r",
+                "     (toTimestamp(hra_fin, 'HH:mm:ss') - toTimestamp(hra_inicio, 'HH:mm:ss')) / 3600\r",
+                ")) ~> derivedColumn2",
+                "derivedColumn2 derive(adherencia_ruta = iif(num_paradas_plan_clean == 0, 0, toInteger(num_paradas_real_clean) / toInteger(num_paradas_plan_clean))) ~> derivedColumn3",
+                "MapDrifted3 derive(puntualidad_clean = coalesce(puntualidad, 3),",
+                "          cortesia_clean = coalesce(cortesia, 3)) ~> derivedColumn4",
+                "derivedColumn4 derive(calificacion_promedio = (puntualidad_clean + cortesia_clean) / 2.0) ~> derivedColumn5",
+                "derivedColumn1, derivedColumn3 join(MapDrifted1@cond_id == MapDrifted2@cond_id",
+                "     && fec_entrega_real_date == fec_ruta,",
+                "     joinType:'left',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> joinTmsGps",
+                "joinTmsGps, derivedColumn5 join(MapDrifted1@cond_id == MapDrifted3@cond_id",
+                "     && fec_entrega_real_date == fec_calificacion,",
+                "     joinType:'left',",
+                "     matchType:'exact',",
+                "     ignoreSpaces: false,",
+                "     broadcast: 'auto')~> joinAll",
+                "joinAll aggregate(groupBy(MapDrifted1@cond_id,",
+                "          fec_entrega_real_date),",
+                "     tasa_exito = avg(entregado_flag),",
+                "          adherencia_ruta_prom = avg(adherencia_ruta),",
+                "          velocidad_promedio = avg(km_recorridos_clean / horas_trabajadas),",
+                "          intentos_promedio = avg(intentos),",
+                "          calificacion_promedio = avg(calificacion_promedio),",
+                "          total_envios = count(id_envio)) ~> aggDaily",
+                "aggDaily window(min_tasa = min(tasa_exito),",
+                "          max_tasa = max(tasa_exito),",
+                "          min_adherencia = min(adherencia_ruta_prom),",
+                "          max_adherencia = max(adherencia_ruta_prom),",
+                "          min_velocidad = min(velocidad_promedio),",
+                "          max_velocidad = max(velocidad_promedio),",
+                "          min_intentos = min(intentos_promedio),",
+                "          max_intentos = max(intentos_promedio),",
+                "          min_calificacion = min(calificacion_promedio),",
+                "          max_calificacion = max(calificacion_promedio)) ~> windowNorm",
+                "windowNorm derive(tasa_norm = iif(max_tasa == min_tasa, 0.5, toFloat(tasa_exito - min_tasa) / toFloat(max_tasa - min_tasa)),",
+                "          adherencia_norm = iif(max_adherencia == min_adherencia, 0.5, toFloat(adherencia_ruta_prom - min_adherencia) / toFloat(max_adherencia - min_adherencia)),",
+                "          velocidad_norm = iif(max_velocidad == min_velocidad, 0.5, toFloat(velocidad_promedio - min_velocidad) / toFloat(max_velocidad - min_velocidad)),",
+                "          intentos_norm = iif(max_intentos == min_intentos, 0.5, toFloat(intentos_promedio - min_intentos) / toFloat(max_intentos - min_intentos)),",
+                "          calificacion_norm = iif(max_calificacion == min_calificacion, 0.5, toFloat(calificacion_promedio - min_calificacion) / toFloat(max_calificacion - min_calificacion))) ~> derivedColumn6",
+                "derivedColumn6 derive(inversa_intentos_norm = 1 - intentos_norm) ~> derivedColumn7",
+                "derivedColumn7 derive(score_desempeno = round(     (tasa_norm * 0.35) +     (adherencia_norm * 0.20) +     (velocidad_norm * 0.20) +     (inversa_intentos_norm * 0.15) +     (calificacion_norm * 0.10) , 2)) ~> derivedColumn8",
+                "derivedColumn8 select(mapColumn(",
+                "          cond_id,",
+                "          fecha = fec_entrega_real_date,",
+                "          tasa_exito,",
+                "          adherencia_ruta_prom,",
+                "          velocidad_promedio,",
+                "          intentos_promedio,",
+                "          calificacion_promedio,",
+                "          tasa_norm,",
+                "          adherencia_norm,",
+                "          velocidad_norm,",
+                "          inversa_intentos_norm,",
+                "          calificacion_norm,",
+                "          score_desempeno,",
+                "          total_envios",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['data.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink1"
+            ]
+        }
+    }
+}

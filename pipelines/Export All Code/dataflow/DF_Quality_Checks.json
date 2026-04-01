@@ -1,0 +1,232 @@
+{
+    "name": "DF_Quality_Checks",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "factEnvios"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "dimConductores"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "factDesempenoConductor"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink3"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink1"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink2"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink4"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink5"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "MapDrifted1",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "MapDrifted2",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "MapDrifted3",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "aggTiempo"
+                },
+                {
+                    "name": "assertTiempo"
+                },
+                {
+                    "name": "aggCategoria"
+                },
+                {
+                    "name": "assertCategoria"
+                },
+                {
+                    "name": "aggCondNull"
+                },
+                {
+                    "name": "assertCondNull"
+                },
+                {
+                    "name": "aggAntiguedad"
+                },
+                {
+                    "name": "assertAntiguedad"
+                },
+                {
+                    "name": "aggScore"
+                },
+                {
+                    "name": "assertScore"
+                }
+            ],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> factEnvios",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> dimConductores",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> factDesempenoConductor",
+                "factEnvios derive(id_envio = toLong(byName('id_envio')),",
+                "          id_remitente = toLong(byName('id_remitente')),",
+                "          cond_id = toLong(byName('cond_id')),",
+                "          id_zona_destino = toLong(byName('id_zona_destino')),",
+                "          tip_paquete = toString(byName('tip_paquete')),",
+                "          peso_kg = toDouble(byName('peso_kg')),",
+                "          fec_recepcion_date = toDate(byName('fec_recepcion_date')),",
+                "          hra_recepcion = toString(byName('hra_recepcion')),",
+                "          fec_entrega_programada = toString(byName('fec_entrega_programada')),",
+                "          fec_entrega_real_date = toDate(byName('fec_entrega_real_date')),",
+                "          vr_declarado = toDouble(byName('vr_declarado')),",
+                "          tiempo_entrega_real_horas = toDouble(byName('tiempo_entrega_real_horas')),",
+                "          cumple_sla = toInteger(byName('cumple_sla')),",
+                "          numero_intentos = toInteger(byName('numero_intentos')),",
+                "          retraso_categoria = toString(byName('retraso_categoria'))) ~> MapDrifted1",
+                "factDesempenoConductor derive(cond_id = toLong(byName('cond_id')),",
+                "          fecha = toDate(byName('fecha')),",
+                "          tasa_exito = toDouble(byName('tasa_exito')),",
+                "          adherencia_ruta_prom = toDouble(byName('adherencia_ruta_prom')),",
+                "          velocidad_promedio = toDouble(byName('velocidad_promedio')),",
+                "          intentos_promedio = toDouble(byName('intentos_promedio')),",
+                "          calificacion_promedio = toDouble(byName('calificacion_promedio')),",
+                "          tasa_norm = toDouble(byName('tasa_norm')),",
+                "          adherencia_norm = toDouble(byName('adherencia_norm')),",
+                "          velocidad_norm = toDouble(byName('velocidad_norm')),",
+                "          inversa_intentos_norm = toDouble(byName('inversa_intentos_norm')),",
+                "          calificacion_norm = toDouble(byName('calificacion_norm')),",
+                "          score_desempeno = toDouble(byName('score_desempeno')),",
+                "          total_envios = toLong(byName('total_envios'))) ~> MapDrifted2",
+                "dimConductores derive(cond_id = toLong(byName('cond_id')),",
+                "          num_doc_hash = toString(byName('num_doc_hash')),",
+                "          antiguedad_anos = toLong(byName('antiguedad_anos')),",
+                "          tip_vehiculo_std = toString(byName('tip_vehiculo_std')),",
+                "          id_ciudad_base = toString(byName('id_ciudad_base')),",
+                "          cod_zona_asignada = toLong(byName('cod_zona_asignada')),",
+                "          activo = toLong(byName('activo')),",
+                "          calific_promedio_acum = toDouble(byName('calific_promedio_acum')),",
+                "          nomb_cond = toString(byName('nomb_cond')),",
+                "          apell_cond = toString(byName('apell_cond'))) ~> MapDrifted3",
+                "MapDrifted1 aggregate(min_tiempo = min(tiempo_entrega_real_horas)) ~> aggTiempo",
+                "aggTiempo assert(expectTrue(min_tiempo >= 0, false, 'assertTiempo', min_tiempo >= 0, \"Hay tiempos de entrega negativos en fact_envios\")) ~> assertTiempo",
+                "MapDrifted1 aggregate(groupBy(cond_id),",
+                "     invalid_count = sum(iif(retraso_categoria != 'A tiempo' && retraso_categoria != 'Retraso leve' && retraso_categoria != 'Retraso moderado' && retraso_categoria != 'Retraso critico' && retraso_categoria != 'No entregado', 1, 0))) ~> aggCategoria",
+                "aggCategoria assert(expectTrue(invalid_count == 0, false, 'assertCategoria', null, \"Categoría de retraso inválida en fact_envios\")) ~> assertCategoria",
+                "MapDrifted1 aggregate(groupBy(cond_id),",
+                "     null_count = sum(iif(isNull(cond_id), 1, 0))) ~> aggCondNull",
+                "aggCondNull assert(expectTrue(null_count == 0, false, 'assertCondNull', null, \"Existen registros con cond_id nulo en fact_envios\")) ~> assertCondNull",
+                "MapDrifted3 aggregate(groupBy(cond_id),",
+                "     min_antiguedad = min(antiguedad_anos)) ~> aggAntiguedad",
+                "aggAntiguedad assert(expectTrue(min_antiguedad >= 0, false, 'assertAntiguedad', null, \"Antigüedad negativa en dim_conductores\")) ~> assertAntiguedad",
+                "MapDrifted2 aggregate(groupBy(cond_id),",
+                "     min_score = min(score_desempeno),",
+                "          max_score = max(score_desempeno)) ~> aggScore",
+                "aggScore assert(expectTrue(min_score >= 0 && max_score <= 1, false, 'assertScore', null, \"Score de desempeño fuera de rango [0,1] en fact_desempeno_conductor\")) ~> assertScore",
+                "assertTiempo sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['logs/quality_check_tiempo.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink3",
+                "assertCategoria sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['logs/quality_check_categorias.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink1",
+                "assertCondNull sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['logs/quality_check_cond_null.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink2",
+                "assertAntiguedad sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['logs/quality_check_antiguedad.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink4",
+                "assertScore sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['logs/quality_check_score.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink5"
+            ]
+        }
+    }
+}

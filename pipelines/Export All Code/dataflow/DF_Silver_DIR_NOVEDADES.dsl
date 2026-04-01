@@ -1,0 +1,30 @@
+source(allowSchemaDrift: true,
+	validateSchema: false,
+	inferDriftedColumnTypes: true,
+	ignoreNoFilesFound: false,
+	format: 'parquet') ~> source1
+MapDrifted1 aggregate(groupBy(id_envio,
+		fec_novedad,
+		tip_novedad,
+		desc_novedad,
+		id_agente_registro,
+		requiere_accion),
+	id_novedad = first(id_novedad)) ~> aggregate1
+aggregate1 derive(desc_novedad = coalesce(desc_novedad, '')) ~> derivedColumn1
+source1 derive(id_novedad = toLong(byName('id_novedad')),
+		id_envio = toLong(byName('id_envio')),
+		fec_novedad = toString(byName('fec_novedad')),
+		tip_novedad = toString(byName('tip_novedad')),
+		desc_novedad = toString(byName('desc_novedad')),
+		id_agente_registro = toLong(byName('id_agente_registro')),
+		requiere_accion = toBoolean(byName('requiere_accion'))) ~> MapDrifted1
+derivedColumn1 sink(allowSchemaDrift: true,
+	validateSchema: false,
+	format: 'parquet',
+	partitionFileNames:['data.parquet'],
+	umask: 0022,
+	preCommands: [],
+	postCommands: [],
+	skipDuplicateMapInputs: true,
+	skipDuplicateMapOutputs: true,
+	partitionBy('hash', 1)) ~> sink1

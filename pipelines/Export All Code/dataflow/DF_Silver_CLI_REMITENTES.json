@@ -1,0 +1,72 @@
+{
+    "name": "DF_Silver_CLI_REMITENTES",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Bronze_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "source1"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink1"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "MapDrifted1",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "aggregate1"
+                },
+                {
+                    "name": "derivedColumn1"
+                }
+            ],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> source1",
+                "source1 derive(id_remitente = toLong(byName('id_remitente')),",
+                "          razon_social = toString(byName('razon_social')),",
+                "          tipo_cliente = toString(byName('tipo_cliente')),",
+                "          ciudad_principal = toString(byName('ciudad_principal')),",
+                "          sla_entrega_horas = toLong(byName('sla_entrega_horas')),",
+                "          penalidad_porc = toLong(byName('penalidad_porc')),",
+                "          activo = toLong(byName('activo'))) ~> MapDrifted1",
+                "MapDrifted1 aggregate(groupBy(razon_social,",
+                "          tipo_cliente,",
+                "          ciudad_principal,",
+                "          sla_entrega_horas,",
+                "          penalidad_porc,",
+                "          activo),",
+                "     id_remitente = first(id_remitente)) ~> aggregate1",
+                "aggregate1 derive(sla_entrega_horas = coalesce(sla_entrega_horas, 24),",
+                "          penalidad_porc = coalesce(penalidad_porc, 5),",
+                "          razon_social = sha2(256, coalesce(razon_social, ''))) ~> derivedColumn1",
+                "derivedColumn1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['data.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink1"
+            ]
+        }
+    }
+}

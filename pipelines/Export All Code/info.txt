@@ -1,0 +1,6 @@
+selected resource name:		PL_Master_Orchestrator
+selected resource type:		pipeline
+factory name:			adf-rg-prueba-tecnica-dev
+factory location:		eastus2
+subscription id:		0160725b-444c-4f65-a2c3-9dcb95f5957f
+time of download (UTC):		Wed, 01 Apr 2026 14:42:27 GMT

@@ -1,0 +1,168 @@
+{
+    "name": "DF_Gold_fact_trazabilidad",
+    "properties": {
+        "type": "MappingDataFlow",
+        "typeProperties": {
+            "sources": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "TmsEnvios"
+                },
+                {
+                    "dataset": {
+                        "referenceName": "DS_Silver_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "DirNovedades"
+                }
+            ],
+            "sinks": [
+                {
+                    "dataset": {
+                        "referenceName": "DS_Gold_Parquet",
+                        "type": "DatasetReference"
+                    },
+                    "name": "sink1"
+                }
+            ],
+            "transformations": [
+                {
+                    "name": "eventoRecepcion"
+                },
+                {
+                    "name": "MapDrifted1",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "MapDrifted2",
+                    "description": "Creates an explicit mapping for each drifted column"
+                },
+                {
+                    "name": "eventoIntento1"
+                },
+                {
+                    "name": "eventoIntento2"
+                },
+                {
+                    "name": "eventoEntrega"
+                },
+                {
+                    "name": "union1"
+                },
+                {
+                    "name": "filter1"
+                },
+                {
+                    "name": "eventoNovedad"
+                },
+                {
+                    "name": "filter2"
+                },
+                {
+                    "name": "union2"
+                },
+                {
+                    "name": "sort1"
+                },
+                {
+                    "name": "window1"
+                },
+                {
+                    "name": "derivedColumn1"
+                },
+                {
+                    "name": "select1"
+                }
+            ],
+            "scriptLines": [
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> TmsEnvios",
+                "source(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     inferDriftedColumnTypes: true,",
+                "     ignoreNoFilesFound: false,",
+                "     format: 'parquet') ~> DirNovedades",
+                "MapDrifted1 derive(timestamp_evento = toTimestamp(concat(fec_recepcion, ' ', hra_recepcion), 'yyyy-MM-dd HH:mm:ss'),",
+                "          tipo_evento = 'Recepcion',",
+                "          descripcion = '',",
+                "          resultado = '') ~> eventoRecepcion",
+                "TmsEnvios derive(tip_paquete = toString(byName('tip_paquete')),",
+                "          id_remitente = toLong(byName('id_remitente')),",
+                "          cond_id = toLong(byName('cond_id')),",
+                "          id_zona_destino = toLong(byName('id_zona_destino')),",
+                "          peso_kg = toDouble(byName('peso_kg')),",
+                "          fec_recepcion = toString(byName('fec_recepcion')),",
+                "          hra_recepcion = toString(byName('hra_recepcion')),",
+                "          fec_entrega_programada = toString(byName('fec_entrega_programada')),",
+                "          fec_intento1 = toString(byName('fec_intento1')),",
+                "          hra_intento1 = toString(byName('hra_intento1')),",
+                "          resultado_intento1 = toString(byName('resultado_intento1')),",
+                "          fec_intento2 = toString(byName('fec_intento2')),",
+                "          hra_intento2 = toString(byName('hra_intento2')),",
+                "          resultado_intento2 = toString(byName('resultado_intento2')),",
+                "          fec_entrega_real = toString(byName('fec_entrega_real')),",
+                "          estado_final = toString(byName('estado_final')),",
+                "          motivo_fallo_cod = toString(byName('motivo_fallo_cod')),",
+                "          vr_declarado = toDouble(byName('vr_declarado')),",
+                "          id_envio = toLong(byName('id_envio'))) ~> MapDrifted1",
+                "DirNovedades derive(id_envio = toLong(byName('id_envio')),",
+                "          fec_novedad = toString(byName('fec_novedad')),",
+                "          tip_novedad = toString(byName('tip_novedad')),",
+                "          desc_novedad = toString(byName('desc_novedad')),",
+                "          id_agente_registro = toLong(byName('id_agente_registro')),",
+                "          requiere_accion = toBoolean(byName('requiere_accion')),",
+                "          id_novedad = toLong(byName('id_novedad'))) ~> MapDrifted2",
+                "MapDrifted1 derive(timestamp_evento = toTimestamp(concat(fec_intento1, ' ', hra_intento1), 'yyyy-MM-dd HH:mm:ss'),",
+                "          tipo_evento = 'Intento1',",
+                "          descripcion = '',",
+                "          resultado = resultado_intento1) ~> eventoIntento1",
+                "MapDrifted1 derive(timestamp_evento = toTimestamp(concat(fec_intento2, ' ', hra_intento2), 'yyyy-MM-dd HH:mm:ss'),",
+                "          tipo_evento = 'Intento2',",
+                "          resultado = resultado_intento2) ~> eventoIntento2",
+                "MapDrifted1 derive(timestamp_evento = toTimestamp(fec_entrega_real, 'yyyy-MM-dd HH:mm:ss'),",
+                "          tipo_evento = 'Entrega',",
+                "          resultado = estado_final) ~> eventoEntrega",
+                "eventoEntrega, eventoIntento2, eventoIntento1, eventoRecepcion union(byName: true)~> union1",
+                "union1 filter(not(isNull(timestamp_evento))) ~> filter1",
+                "MapDrifted2 derive(timestamp_evento = toTimestamp(fec_novedad, 'yyyy-MM-dd HH:mm:ss'),",
+                "          tipo_evento = 'Novedad',",
+                "          descripcion = coalesce(desc_novedad, ''),",
+                "          resultado = coalesce(tip_novedad, '')) ~> eventoNovedad",
+                "eventoNovedad filter(not(isNull(timestamp_evento))) ~> filter2",
+                "filter1, filter2 union(byName: true)~> union2",
+                "union2 sort(asc(id_envio, true),",
+                "     asc(timestamp_evento, true)) ~> sort1",
+                "sort1 window(over(id_envio),",
+                "     asc(timestamp_evento, true),",
+                "     previous_timestamp = lag(timestamp_evento, 1)) ~> window1",
+                "window1 derive(tiempo_desde_anterior_horas = iif(isNull(previous_timestamp), -1.0, toFloat(timestamp_evento - previous_timestamp) / 3600)) ~> derivedColumn1",
+                "derivedColumn1 select(mapColumn(",
+                "          id_envio,",
+                "          timestamp_evento,",
+                "          tipo_evento,",
+                "          descripcion,",
+                "          resultado,",
+                "          tiempo_desde_anterior_horas",
+                "     ),",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true) ~> select1",
+                "select1 sink(allowSchemaDrift: true,",
+                "     validateSchema: false,",
+                "     format: 'parquet',",
+                "     partitionFileNames:['data.parquet'],",
+                "     umask: 0022,",
+                "     preCommands: [],",
+                "     postCommands: [],",
+                "     skipDuplicateMapInputs: true,",
+                "     skipDuplicateMapOutputs: true,",
+                "     partitionBy('hash', 1)) ~> sink1"
+            ]
+        }
+    }
+}

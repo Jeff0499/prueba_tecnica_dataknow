@@ -1,0 +1,30 @@
+{
+    "name": "DS_Bronze_Parquet",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_ADLS_PruebaTecnica",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "tableName": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileName": "data.parquet",
+                "folderPath": {
+                    "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                    "type": "Expression"
+                },
+                "fileSystem": "bronze"
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,327 @@
+{
+    "name": "PL_Gold_AllTables",
+    "properties": {
+        "activities": [
+            {
+                "name": "DF_Gold_dim_remitentes",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_dim_remitentes",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "source1": {
+                                "tableName": "CLI_REMITENTES"
+                            },
+                            "sink1": {
+                                "tableName": "dim_remitentes"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_fact_envios",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_dim_remitentes",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_fact_envios",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "source1": {
+                                "tableName": "TMS_ENVIOS"
+                            },
+                            "source2": {
+                                "tableName": "dim_remitentes"
+                            },
+                            "sink1": {
+                                "tableName": "fact_envios"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_dim_conductores",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_fact_envios",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_dim_conductores",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "source1": {
+                                "tableName": "OPE_CONDUCTORES"
+                            },
+                            "sink1": {
+                                "tableName": "dim_conductores"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_dim_zonas",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_dim_conductores",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_dim_zonas",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "source1": {
+                                "tableName": "GEO_ZONAS"
+                            },
+                            "sink1": {
+                                "tableName": "dim_zonas"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_fact_rutas",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_dim_zonas",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_fact_rutas",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "source1": {
+                                "tableName": "GPS_RUTAS"
+                            },
+                            "sink1": {
+                                "tableName": "fact_rutas"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_fact_desempeno",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_fact_rutas",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_fact_desempeno",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "TmsEnvios": {
+                                "tableName": "TMS_ENVIOS"
+                            },
+                            "GpsRutas": {
+                                "tableName": "GPS_RUTAS"
+                            },
+                            "CalDestinatarios": {
+                                "tableName": "CAL_DESTINATARIOS"
+                            },
+                            "sink1": {
+                                "tableName": "fact_desempeno_conductor"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_fact_trazabilidad",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_fact_desempeno",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_fact_trazabilidad",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "TmsEnvios": {
+                                "tableName": "TMS_ENVIOS"
+                            },
+                            "DirNovedades": {
+                                "tableName": "DIR_NOVEDADES"
+                            },
+                            "sink1": {
+                                "tableName": "fact_trazabilidad_envio"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "DF_Gold_fact_alertas_zona",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "DF_Gold_fact_trazabilidad",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "DF_Gold_fact_alertas_zona",
+                        "type": "DataFlowReference",
+                        "datasetParameters": {
+                            "source1": {
+                                "tableName": "fact_envios"
+                            },
+                            "sink1": {
+                                "tableName": "fact_alertas_zona"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            }
+        ],
+        "annotations": [],
+        "lastPublishTime": "2026-04-01T04:30:29Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

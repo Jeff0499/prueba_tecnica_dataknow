@@ -1,0 +1,56 @@
+source(allowSchemaDrift: true,
+	validateSchema: false,
+	inferDriftedColumnTypes: true,
+	ignoreNoFilesFound: false,
+	format: 'parquet') ~> source1
+source1 derive(cond_id = toLong(byName('cond_id')),
+		fec_ruta = toString(byName('fec_ruta')),
+		hra_inicio = toString(byName('hra_inicio')),
+		hra_fin = toString(byName('hra_fin')),
+		km_recorridos = toDouble(byName('km_recorridos')),
+		num_paradas_plan = toLong(byName('num_paradas_plan')),
+		num_paradas_real = toLong(byName('num_paradas_real')),
+		desviacion_ruta_km = toDouble(byName('desviacion_ruta_km')),
+		consumo_combustible = toDouble(byName('consumo_combustible')),
+		id_ruta = toLong(byName('id_ruta'))) ~> MapDrifted1
+MapDrifted1 derive(num_paradas_plan_clean = coalesce(num_paradas_plan, 1),
+		num_paradas_real_clean = coalesce(num_paradas_real, 0),
+		km_recorridos_clean = coalesce(km_recorridos, 0.0),
+		desviacion_ruta_km_clean = coalesce(desviacion_ruta_km, 0.0),
+		hra_inicio_ts = toTimestamp(hra_inicio, 'HH:mm:ss'),
+		hra_fin_ts = toTimestamp(hra_fin, 'HH:mm:ss')) ~> derivedColumn1
+derivedColumn1 derive(horas_trabajadas = iif( (toTimestamp(hra_fin, 'HH:mm:ss') - toTimestamp(hra_inicio, 'HH:mm:ss')) < 0,
+	(toTimestamp(hra_fin, 'HH:mm:ss') - toTimestamp(hra_inicio, 'HH:mm:ss') + 86400) / 3600,
+	(toTimestamp(hra_fin, 'HH:mm:ss') - toTimestamp(hra_inicio, 'HH:mm:ss')) / 3600
+   ),
+		eficiencia_ruta = iif(num_paradas_plan_clean == 0, 0, toInteger(num_paradas_real_clean)/ toInteger(num_paradas_plan_clean))) ~> derivedColumn2
+derivedColumn2 derive(velocidad_promedio_kmh = iif(horas_trabajadas == 0, 0, toInteger(km_recorridos_clean) / toInteger(horas_trabajadas)),
+		desviacion_porcentaje = iif(km_recorridos_clean == 0, 0, (toInteger(desviacion_ruta_km_clean) / toInteger(km_recorridos_clean)) * 100)) ~> derivedColumn3
+derivedColumn3 select(mapColumn(
+		id_ruta,
+		cond_id,
+		fec_ruta,
+		hra_inicio,
+		hra_fin,
+		km_recorridos_clean,
+		num_paradas_plan_clean,
+		num_paradas_real_clean,
+		desviacion_ruta_km_clean,
+		consumo_combustible,
+		horas_trabajadas,
+		eficiencia_ruta,
+		velocidad_promedio_kmh,
+		desviacion_porcentaje
+	),
+	skipDuplicateMapInputs: true,
+	skipDuplicateMapOutputs: true) ~> select1
+select1 sink(allowSchemaDrift: true,
+	validateSchema: false,
+	format: 'parquet',
+	partitionFileNames:['data.parquet'],
+	umask: 0022,
+	preCommands: [],
+	postCommands: [],
+	skipDuplicateMapInputs: true,
+	skipDuplicateMapOutputs: true,
+	partitionBy('hash', 1)) ~> sink1
