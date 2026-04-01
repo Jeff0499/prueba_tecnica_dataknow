@@ -89,7 +89,7 @@
                                 "source": {
                                     "type": "AzureSqlSource",
                                     "sqlReaderQuery": {
-                                        "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > '@{variables('v_watermarkValue')}'",
+                                        "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > @{variables('v_watermarkValue')}",
                                         "type": "Expression"
                                     },
                                     "queryTimeout": "02:00:00",
@@ -224,6 +224,65 @@
                             }
                         }
                     ]
+                }
+            },
+            {
+                "name": "Correo Success",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "ForEach1",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "method": "POST",
+                    "url": {
+                        "value": "https://prod-43.eastus2.logic.azure.com:443/workflows/0b9dcbf9304b4ccea0ae0630fe3e74a7/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=gE2ern_v_dYg7wEHYxiXYBocDuKYqyak6Wex5iaAddU",
+                        "type": "Expression"
+                    },
+                    "body": {
+                        "value": "{\n  \"pipelineName\": \"PL_Ingesta_Bronze\",\n  \"status\": \"Correcto\",\n  \"fecha\": \"@{utcNow()}\"\n}",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Correo failed",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "ForEach1",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "method": "POST",
+                    "url": "https://prod-43.eastus2.logic.azure.com:443/workflows/0b9dcbf9304b4ccea0ae0630fe3e74a7/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=gE2ern_v_dYg7wEHYxiXYBocDuKYqyak6Wex5iaAddU",
+                    "body": {
+                        "value": "{\n  \"pipelineName\": \"PL_Ingesta_Bronze\",\n  \"status\": \"Fallo\",\n  \"fecha\": \"@{utcNow()}\"\n}",
+                        "type": "Expression"
+                    }
                 }
             }
         ],

@@ -1,7 +1,7 @@
 {
-    "now": "2026-04-01T14:42:27.812Z",
-    "perfNow": 725636.5,
-    "diagnosticCorrelation": "ee4b0171-e35c-406c-ba59-0226fc86c6e5",
+    "now": "2026-04-01T18:06:23.483Z",
+    "perfNow": 13033890.900000095,
+    "diagnosticCorrelation": "ffaf8b67-b3bd-46e5-9a15-f1498e4268ca",
     "source": "DownloadSupportFiles",
     "environment": {
         "productName": "adf",
@@ -11,10 +11,10 @@
         "resourceRegion": "eastus2",
         "resourceGroup": "rg-prueba-tecnica",
         "subscriptionId": "0160725b-444c-4f65-a2c3-9dcb95f5957f",
-        "sessionId": "tHccfzWk7fYEklYaTw4GmJ",
+        "sessionId": "maeKwjqNtuXzC4+BK82dM/",
         "operationId": "",
         "gitType": "live",
-        "loggingKey": "121dae90-3a4b-4b74-903e-4fa2da30bcd3"
+        "loggingKey": "1457bb66-6e2b-40d6-8925-8301223b6382"
     },
     "additionalInfo": {
         "selectedResource": "PL_Master_Orchestrator",
