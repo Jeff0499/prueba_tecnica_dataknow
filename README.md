@@ -171,5 +171,5 @@ Modelo analítico:
   - Éxito: también se envía correo de resumen (alerta de métrica).  
     ![Reporte de éxito](docs/success_report.png)
 - **Monitoreo**: dashboard con historial de ejecuciones.  
-  ![Monitor](docs/monitor_dashboard.png)
+  ![Monitor](docs/Monitor_dashboard.png)
 - **Código**: definición del pipeline en [`pipelines/Export All Code/diagnostic.json`](pipelines/Export All Code/diagnostic.json).
