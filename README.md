@@ -1,33 +1,47 @@
-# Prueba Técnica Ingeniero de Datos – Escenario D (Logística)
+# 🚀 Prueba Técnica Ingeniero de Datos – Escenario D (Logística)
 
 ## 1. Selección del escenario y plataforma
 
 **Escenario elegido:** D – Logística y Cadena de Suministro  
 **Plataforma cloud:** Microsoft Azure  
-**Justificación:**  
-Azure ofrece servicios gestionados como Azure SQL Database, Data Lake Storage Gen2, Data Factory y Databricks, que se alinean con los requisitos de la prueba. La elección permite construir una solución escalable, segura y con gobierno de datos integrado.
+
+### Justificación
+Azure ofrece servicios gestionados como:
+- Azure SQL Database  
+- Data Lake Storage Gen2  
+- Data Factory  
+- Databricks  
+
+Esto permite construir una solución **escalable, segura y con gobierno de datos integrado**.
 
 ---
 
 ## 2. Fase 1 – Generación de datos sintéticos
 
 ### 2.1 Herramientas utilizadas
-- **Python 3.12** con las librerías:
-  - `pandas`, `numpy` → manipulación y generación de datos.
-  - `Faker` → generación de datos realistas (nombres, direcciones, etc.).
-  - `hashlib` → enmascaramiento de datos sensibles (documentos).
-  - `pyyaml` → gestión de configuración.
-- **Formato de salida:** CSV y Parquet (para simular ingesta heterogénea).
+
+- **Python 3.12**
+- Librerías:
+  - `pandas`, `numpy` → manipulación de datos
+  - `Faker` → datos realistas
+  - `hashlib` → enmascaramiento
+  - `pyyaml` → configuración
+
+**Formato de salida:** CSV y Parquet
+
+---
 
 ### 2.2 Configuración de generación
-Los parámetros de volumen, fechas y tasas de anomalías se definieron en `config.yaml`:
-```
-yaml
+
+Archivo `config.yaml`:
+
+```yaml
 seed: 42
 date_range:
   start: "2024-01-01"
   end: "2024-12-31"
 output_formats: ["csv", "parquet"]
+
 volumes:
   OPE_CONDUCTORES: 500
   CLI_REMITENTES: 200
@@ -36,38 +50,111 @@ volumes:
   GPS_RUTAS: 100000
   CAL_DESTINATARIOS: 300000
   DIR_NOVEDADES: 150000
+
 anomalies:
   duplicate_rate: 0.001
   null_rate: 0.05
   out_of_range_rate: 0.001
   referential_integrity_violation_rate: 0.005
+```
 
 ---
-```
+
+### 2.3 Carga en Azure SQL Database
+
+- Base de datos: `prueba_tecnica`
+- Herramientas:
+  - `pymssql`
+  - `SQLAlchemy`
+- Credenciales almacenadas en `.env` (no versionado)
+
+---
+
+### 2.4 Evidencias
+
+- Diagrama Entidad-Relación  
+- Verificación de conteos  
+
+---
 
 ## 3. Fase 2 – Infraestructura como Código (Terraform)
 
-Se utilizó Terraform para aprovisionar los siguientes recursos en Azure:
-- **Resource Group**: `rg-prueba-tecnica`
-- **Storage Account (ADLS Gen2)**: con contenedores `bronze`, `silver`, `gold`
-- **Azure Data Factory**: orquestación del pipeline
-- **Azure Databricks Workspace**: transformaciones Silver y Gold
-- **Azure Key Vault**: almacenamiento de secretos
-- **Log Analytics Workspace**: monitoreo
-- **Action Group**: alertas por correo
+### Recursos aprovisionados
 
-### Justificación de elecciones
-- **Terraform** permite la gestión declarativa y versionada de la infraestructura.
-- **Backend remoto** en Azure Storage garantiza que el estado no se almacene localmente ni se suba al repositorio.
-- Los parámetros están parametrizados para soportar múltiples entornos (dev/prod).
+- Resource Group: `rg-prueba-tecnica`
+- Storage Account (ADLS Gen2):
+  - `bronze`
+  - `silver`
+  - `gold`
+- Azure Data Factory  
+- Azure Databricks  
+- Azure Key Vault  
+- Log Analytics Workspace  
+- Action Group  
 
-### Instrucciones para desplegar
-1. Instalar Terraform y Azure CLI.
-2. Autenticarse con `az login`.
-3. Crear manualmente la cuenta de almacenamiento para el estado (ver sección).
-4. Copiar `terraform.tfvars.example` a `terraform.tfvars` y ajustar valores.
-5. Ejecutar `terraform init`, `terraform plan`, `terraform apply`.
+---
+
+### Justificación
+
+- Infraestructura **declarativa y versionada**
+- Backend remoto en Azure Storage
+- Soporte para múltiples entornos (dev/prod)
+
+---
+
+### Instrucciones de despliegue
+
+```bash
+az login
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+terraform apply
+```
+
+---
 
 ### Evidencias
-![Terraform apply output](docs/fase2-apply-complete-terraform.png)
-![Recursos en Azure Portal](docs/fase1-captura-generacion-y-subida-de-datos.png)
+
+- Salida de `terraform apply`
+- Recursos en Azure Portal
+
+---
+
+## 4. Fase 3 – Pipeline Medallion
+
+### 4.1 Arquitectura
+
+#### 🥉 Bronze
+- Ingesta incremental desde Azure SQL
+- Formato: Parquet
+- Particionado: año/mes/día
+- Auditoría:
+  - `batch_id`
+  - `ingest_timestamp`
+  - `source_system`
+
+#### 🥈 Silver
+- Limpieza y deduplicación
+- Manejo de nulos
+- Enmascaramiento (SHA-256)
+- Validaciones
+- Errores → `silver/errors/`
+- Reporte → `silver/logs/quality_report.csv`
+
+#### 🥇 Gold
+Modelo analítico:
+
+- **Dimensiones**
+  - `dim_conductores`
+  - `dim_remitentes`
+  - `dim_zonas`
+
+- **Hechos**
+  - `fact_envios`
+  - `fact_rutas`
+  - `fact_desempeno_conductor`
+  - `fact_trazabilidad_envio`
+  - `fact_alertas_zona`
+
+---

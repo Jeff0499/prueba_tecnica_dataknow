@@ -1,0 +1,1546 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "type": "string",
+            "metadata": "Data Factory name",
+            "defaultValue": "adf-rg-prueba-tecnica-dev"
+        },
+        "LS_AzureSQL_PruebaTecnica_password": {
+            "type": "secureString",
+            "metadata": "Secure string for 'password' of 'LS_AzureSQL_PruebaTecnica'"
+        },
+        "LS_ADLS_PruebaTecnica_accountKey": {
+            "type": "secureString",
+            "metadata": "Secure string for 'accountKey' of 'LS_ADLS_PruebaTecnica'"
+        },
+        "LS_AzureSQL_PruebaTecnica_properties_typeProperties_server": {
+            "type": "string",
+            "defaultValue": "pruebadataknow.database.windows.net"
+        },
+        "LS_AzureSQL_PruebaTecnica_properties_typeProperties_database": {
+            "type": "string",
+            "defaultValue": "prueba_tecnica"
+        },
+        "LS_AzureSQL_PruebaTecnica_properties_typeProperties_userName": {
+            "type": "string",
+            "defaultValue": "CloudSA7995543c"
+        },
+        "LS_ADLS_PruebaTecnica_properties_typeProperties_url": {
+            "type": "string",
+            "defaultValue": "https://strgpruebatecnicadev.dfs.core.windows.net/"
+        }
+    },
+    "variables": {
+        "factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('factoryName'), '/LS_AzureSQL_PruebaTecnica')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureSqlDatabase",
+                "typeProperties": {
+                    "server": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_server')]",
+                    "database": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_database')]",
+                    "encrypt": "mandatory",
+                    "trustServerCertificate": false,
+                    "authenticationType": "SQL",
+                    "userName": "[parameters('LS_AzureSQL_PruebaTecnica_properties_typeProperties_userName')]",
+                    "password": {
+                        "type": "SecureString",
+                        "value": "[parameters('LS_AzureSQL_PruebaTecnica_password')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/LS_ADLS_PruebaTecnica')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureBlobFS",
+                "typeProperties": {
+                    "url": "[parameters('LS_ADLS_PruebaTecnica_properties_typeProperties_url')]",
+                    "accountKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('LS_ADLS_PruebaTecnica_accountKey')]"
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Bronze_Parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.parquet",
+                        "folderPath": {
+                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "bronze"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_SQL_PruebaTecnica')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureSQL_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [],
+                "typeProperties": {
+                    "schema": "",
+                    "table": {
+                        "value": "@dataset().tableName",
+                        "type": "Expression"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Watermark')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_AzureSQL_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "AzureSqlTable",
+                "schema": [
+                    {
+                        "name": "TableName",
+                        "type": "nvarchar"
+                    },
+                    {
+                        "name": "WatermarkValue",
+                        "type": "nvarchar"
+                    },
+                    {
+                        "name": "LastUpdate",
+                        "type": "datetime",
+                        "precision": 23,
+                        "scale": 3
+                    }
+                ],
+                "typeProperties": {
+                    "schema": "dbo",
+                    "table": "watermark"
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Silver_Parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.parquet",
+                        "folderPath": {
+                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "silver"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Gold_Parquet')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "parameters": {
+                    "tableName": {
+                        "type": "string"
+                    }
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.parquet",
+                        "folderPath": {
+                            "value": "@concat(dataset().tableName, '/year=', formatDateTime(utcnow(),'yyyy'), '/month=', formatDateTime(utcnow(),'MM'), '/day=', formatDateTime(utcnow(),'dd'))",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "gold"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_catch_errors')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "Parquet",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "errors.parquet",
+                        "folderPath": "errors",
+                        "fileSystem": "silver"
+                    },
+                    "compressionCodec": "snappy"
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DS_Silver_Quality_CSV')]",
+            "type": "Microsoft.DataFactory/factories/datasets",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "linkedServiceName": {
+                    "referenceName": "LS_ADLS_PruebaTecnica",
+                    "type": "LinkedServiceReference"
+                },
+                "annotations": [],
+                "type": "DelimitedText",
+                "typeProperties": {
+                    "location": {
+                        "type": "AzureBlobFSLocation",
+                        "fileName": "data.csv",
+                        "folderPath": {
+                            "value": "logs",
+                            "type": "Expression"
+                        },
+                        "fileSystem": "silver"
+                    },
+                    "columnDelimiter": ",",
+                    "escapeChar": "\\",
+                    "firstRowAsHeader": true,
+                    "quoteChar": "\""
+                },
+                "schema": []
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/linkedServices/LS_ADLS_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/PL_Ingesta_Bronze')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "ForEach1",
+                        "type": "ForEach",
+                        "dependsOn": [],
+                        "userProperties": [],
+                        "typeProperties": {
+                            "items": {
+                                "value": "@variables('v_tableNames')",
+                                "type": "Expression"
+                            },
+                            "isSequential": true,
+                            "activities": [
+                                {
+                                    "name": "Lookup Watermark",
+                                    "type": "Lookup",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "AzureSqlSource",
+                                            "sqlReaderQuery": {
+                                                "value": "SELECT WatermarkValue FROM dbo.watermark WHERE TableName = '@{item().name}'",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": "None"
+                                        },
+                                        "dataset": {
+                                            "referenceName": "DS_Watermark",
+                                            "type": "DatasetReference",
+                                            "parameters": {}
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Set Watermark",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Lookup Watermark",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "v_watermarkValue",
+                                        "value": {
+                                            "value": "@activity('Lookup Watermark').output.firstRow.WatermarkValue",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "copy1",
+                                    "type": "Copy",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Set Watermark",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "AzureSqlSource",
+                                            "sqlReaderQuery": {
+                                                "value": "SELECT * FROM @{item().name} WHERE @{item().watermarkCol} > @{variables('v_watermarkValue')}",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": "None"
+                                        },
+                                        "sink": {
+                                            "type": "ParquetSink",
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSWriteSettings"
+                                            },
+                                            "formatSettings": {
+                                                "type": "ParquetWriteSettings"
+                                            }
+                                        },
+                                        "enableStaging": false,
+                                        "translator": {
+                                            "type": "TabularTranslator",
+                                            "typeConversion": true,
+                                            "typeConversionSettings": {
+                                                "allowDataTruncation": true,
+                                                "treatBooleanAsNumber": false
+                                            }
+                                        }
+                                    },
+                                    "inputs": [
+                                        {
+                                            "referenceName": "DS_SQL_PruebaTecnica",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "tableName": {
+                                                    "value": "@item().name",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "outputs": [
+                                        {
+                                            "referenceName": "DS_Bronze_Parquet",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "tableName": {
+                                                    "value": "@item().name",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "Lookup New Watermark",
+                                    "type": "Lookup",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "copy1",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "AzureSqlSource",
+                                            "sqlReaderQuery": {
+                                                "value": "SELECT MAX(@{item().watermarkCol}) AS newWatermark FROM @{item().name} WHERE @{item().watermarkCol} > @{variables('v_watermarkValue')}",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": "None"
+                                        },
+                                        "dataset": {
+                                            "referenceName": "DS_SQL_PruebaTecnica",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "tableName": {
+                                                    "value": "@item().name",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "Update Watermark",
+                                    "type": "SqlServerStoredProcedure",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "Lookup New Watermark",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "storedProcedureName": "[[dbo].[UpdateWatermark]",
+                                        "storedProcedureParameters": {
+                                            "NewWatermark": {
+                                                "value": {
+                                                    "value": "@variables('v_newWatermark')",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            },
+                                            "TableName": {
+                                                "value": {
+                                                    "value": "@item().name",
+                                                    "type": "Expression"
+                                                },
+                                                "type": "String"
+                                            }
+                                        }
+                                    },
+                                    "linkedServiceName": {
+                                        "referenceName": "LS_AzureSQL_PruebaTecnica",
+                                        "type": "LinkedServiceReference"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "policy": {
+                    "elapsedTimeMetric": {}
+                },
+                "variables": {
+                    "v_tableNames": {
+                        "type": "Array",
+                        "defaultValue": [
+                            {
+                                "name": "OPE_CONDUCTORES",
+                                "watermarkCol": "cond_id"
+                            },
+                            {
+                                "name": "CLI_REMITENTES",
+                                "watermarkCol": "id_remitente"
+                            },
+                            {
+                                "name": "GEO_ZONAS",
+                                "watermarkCol": "id_zona"
+                            },
+                            {
+                                "name": "TMS_ENVIOS",
+                                "watermarkCol": "id_envio"
+                            },
+                            {
+                                "name": "GPS_RUTAS",
+                                "watermarkCol": "id_ruta"
+                            },
+                            {
+                                "name": "CAL_DESTINATARIOS",
+                                "watermarkCol": "id_calificacion"
+                            },
+                            {
+                                "name": "DIR_NOVEDADES",
+                                "watermarkCol": "id_novedad"
+                            }
+                        ]
+                    },
+                    "v_watermarkValue": {
+                        "type": "String"
+                    },
+                    "v_newWatermark": {
+                        "type": "String"
+                    }
+                },
+                "annotations": [],
+                "lastPublishTime": "2026-03-28T02:33:07Z"
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Watermark')]",
+                "[concat(variables('factoryId'), '/datasets/DS_SQL_PruebaTecnica')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/linkedServices/LS_AzureSQL_PruebaTecnica')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_GEO_ZONAS')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "MapDrifted1 aggregate(groupBy(nom_zona,",
+                        "          id_ciudad,",
+                        "          barrio_referencia,",
+                        "          latitud_centroide,",
+                        "          longitud_centroide,",
+                        "          nivel_trafico_prom,",
+                        "          tip_zona,",
+                        "          distancia_bodega_km),",
+                        "     id_zona = first(id_zona)) ~> aggregate1",
+                        "aggregate1 derive(nivel_trafico_prom = coalesce(nivel_trafico_prom, 'Medio'),",
+                        "          nom_zona = sha2(256, coalesce(nom_zona, ''))) ~> derivedColumn1",
+                        "source1 derive(id_zona = toLong(byName('id_zona')),",
+                        "          nom_zona = toString(byName('nom_zona')),",
+                        "          id_ciudad = toString(byName('id_ciudad')),",
+                        "          barrio_referencia = toString(byName('barrio_referencia')),",
+                        "          latitud_centroide = toDouble(byName('latitud_centroide')),",
+                        "          longitud_centroide = toDouble(byName('longitud_centroide')),",
+                        "          nivel_trafico_prom = toString(byName('nivel_trafico_prom')),",
+                        "          tip_zona = toString(byName('tip_zona')),",
+                        "          distancia_bodega_km = toDouble(byName('distancia_bodega_km'))) ~> MapDrifted1",
+                        "derivedColumn1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_TMS_ENVIOS')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source2"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        },
+                        {
+                            "dataset": {
+                                "referenceName": "DS_catch_errors",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink2"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "handleNulls"
+                        },
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "MapDrifted2",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "MapDrifted3",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "join1"
+                        },
+                        {
+                            "name": "select1"
+                        },
+                        {
+                            "name": "split1"
+                        },
+                        {
+                            "name": "select2"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source2",
+                        "split1@validos derive(hra_intento1 = iif(isNull(hra_intento1), '00:00:00', toString(byName('hra_intento1'))),",
+                        "          motivo_fallo_cod = coalesce(motivo_fallo_cod, 'No especificado'),",
+                        "          resultado_intento1 = coalesce(resultado_intento1, 'Sin intento')) ~> handleNulls",
+                        "MapDrifted2 aggregate(groupBy(tip_paquete,",
+                        "          id_remitente,",
+                        "          cond_id,",
+                        "          id_zona_destino,",
+                        "          peso_kg,",
+                        "          fec_recepcion,",
+                        "          hra_recepcion,",
+                        "          fec_entrega_programada,",
+                        "          fec_intento1,",
+                        "          hra_intento1,",
+                        "          resultado_intento1,",
+                        "          fec_intento2,",
+                        "          hra_intento2,",
+                        "          resultado_intento2,",
+                        "          fec_entrega_real,",
+                        "          estado_final,",
+                        "          motivo_fallo_cod,",
+                        "          vr_declarado),",
+                        "     id_envio = first(id_envio)) ~> aggregate1",
+                        "source1 derive(id_envio = toLong(byName('id_envio')),",
+                        "          id_remitente = toLong(byName('id_remitente')),",
+                        "          cond_id = toLong(byName('cond_id')),",
+                        "          id_zona_destino = toLong(byName('id_zona_destino')),",
+                        "          tip_paquete = toString(byName('tip_paquete')),",
+                        "          peso_kg = toDouble(byName('peso_kg')),",
+                        "          fec_recepcion = toString(byName('fec_recepcion')),",
+                        "          hra_recepcion = toString(byName('hra_recepcion')),",
+                        "          fec_entrega_programada = toString(byName('fec_entrega_programada')),",
+                        "          fec_intento1 = toString(byName('fec_intento1')),",
+                        "          hra_intento1 = toString(byName('hra_intento1')),",
+                        "          resultado_intento1 = toString(byName('resultado_intento1')),",
+                        "          fec_intento2 = toString(byName('fec_intento2')),",
+                        "          hra_intento2 = toString(byName('hra_intento2')),",
+                        "          resultado_intento2 = toString(byName('resultado_intento2')),",
+                        "          fec_entrega_real = toString(byName('fec_entrega_real')),",
+                        "          estado_final = toString(byName('estado_final')),",
+                        "          motivo_fallo_cod = toString(byName('motivo_fallo_cod')),",
+                        "          vr_declarado = toDouble(byName('vr_declarado'))) ~> MapDrifted2",
+                        "source2 derive(nomb_cond = toString(byName('nomb_cond')),",
+                        "          apell_cond = toString(byName('apell_cond')),",
+                        "          tip_doc = toString(byName('tip_doc')),",
+                        "          num_doc_hash = toString(byName('num_doc_hash')),",
+                        "          fec_ingreso = toString(byName('fec_ingreso')),",
+                        "          id_ciudad_base = toString(byName('id_ciudad_base')),",
+                        "          tip_vehiculo = toString(byName('tip_vehiculo')),",
+                        "          cod_zona_asignada = toLong(byName('cod_zona_asignada')),",
+                        "          activo = toLong(byName('activo')),",
+                        "          calific_promedio_acum = toDouble(byName('calific_promedio_acum')),",
+                        "          cond_id = toLong(byName('cond_id'))) ~> MapDrifted3",
+                        "aggregate1, MapDrifted3 join(aggregate1@cond_id == MapDrifted3@cond_id,",
+                        "     joinType:'left',",
+                        "     matchType:'exact',",
+                        "     ignoreSpaces: false,",
+                        "     broadcast: 'auto')~> join1",
+                        "join1 select(mapColumn(",
+                        "          tip_paquete,",
+                        "          id_remitente,",
+                        "          cond_id_tms = aggregate1@cond_id,",
+                        "          id_zona_destino,",
+                        "          peso_kg,",
+                        "          fec_recepcion,",
+                        "          hra_recepcion,",
+                        "          fec_entrega_programada,",
+                        "          fec_intento1,",
+                        "          hra_intento1,",
+                        "          resultado_intento1,",
+                        "          fec_intento2,",
+                        "          hra_intento2,",
+                        "          resultado_intento2,",
+                        "          fec_entrega_real,",
+                        "          estado_final,",
+                        "          motivo_fallo_cod,",
+                        "          vr_declarado,",
+                        "          id_envio,",
+                        "          nomb_cond,",
+                        "          apell_cond,",
+                        "          tip_doc,",
+                        "          num_doc_hash,",
+                        "          fec_ingreso,",
+                        "          id_ciudad_base,",
+                        "          tip_vehiculo,",
+                        "          cod_zona_asignada,",
+                        "          activo,",
+                        "          calific_promedio_acum,",
+                        "          cond_id_dim = MapDrifted3@cond_id",
+                        "     ),",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true) ~> select1",
+                        "select1 split(not(isNull(cond_id_dim)),",
+                        "     isNull(cond_id_dim),",
+                        "     disjoint: false) ~> split1@(validos, invalidos)",
+                        "handleNulls select(mapColumn(",
+                        "          tip_paquete,",
+                        "          id_remitente,",
+                        "          cond_id = cond_id_tms,",
+                        "          id_zona_destino,",
+                        "          peso_kg,",
+                        "          fec_recepcion,",
+                        "          hra_recepcion,",
+                        "          fec_entrega_programada,",
+                        "          fec_intento1,",
+                        "          hra_intento1,",
+                        "          resultado_intento1,",
+                        "          fec_intento2,",
+                        "          hra_intento2,",
+                        "          resultado_intento2,",
+                        "          fec_entrega_real,",
+                        "          estado_final,",
+                        "          motivo_fallo_cod,",
+                        "          vr_declarado,",
+                        "          id_envio",
+                        "     ),",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true) ~> select2",
+                        "select2 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1",
+                        "split1@invalidos sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink2"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_catch_errors')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_OPE_CONDUCTORES')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "MapDrifted1 aggregate(groupBy(nomb_cond,",
+                        "          apell_cond,",
+                        "          tip_doc,",
+                        "          num_doc_hash,",
+                        "          fec_ingreso,",
+                        "          id_ciudad_base,",
+                        "          tip_vehiculo,",
+                        "          cod_zona_asignada,",
+                        "          activo,",
+                        "          calific_promedio_acum),",
+                        "     cond_id = first(cond_id)) ~> aggregate1",
+                        "source1 derive(cond_id = toLong(byName('cond_id')),",
+                        "          nomb_cond = toString(byName('nomb_cond')),",
+                        "          apell_cond = toString(byName('apell_cond')),",
+                        "          tip_doc = toString(byName('tip_doc')),",
+                        "          num_doc_hash = toString(byName('num_doc_hash')),",
+                        "          fec_ingreso = toString(byName('fec_ingreso')),",
+                        "          id_ciudad_base = toString(byName('id_ciudad_base')),",
+                        "          tip_vehiculo = toString(byName('tip_vehiculo')),",
+                        "          cod_zona_asignada = toLong(byName('cod_zona_asignada')),",
+                        "          activo = toLong(byName('activo')),",
+                        "          calific_promedio_acum = toDouble(byName('calific_promedio_acum'))) ~> MapDrifted1",
+                        "aggregate1 derive(calific_promedio_acum = coalesce(calific_promedio_acum, 3.0),",
+                        "          nomb_cond = sha2(256, coalesce(nomb_cond, '')),",
+                        "          apell_cond = sha2(256, coalesce(apell_cond, ''))) ~> derivedColumn1",
+                        "derivedColumn1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_CLI_REMITENTES')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "source1 derive(id_remitente = toLong(byName('id_remitente')),",
+                        "          razon_social = toString(byName('razon_social')),",
+                        "          tipo_cliente = toString(byName('tipo_cliente')),",
+                        "          ciudad_principal = toString(byName('ciudad_principal')),",
+                        "          sla_entrega_horas = toLong(byName('sla_entrega_horas')),",
+                        "          penalidad_porc = toLong(byName('penalidad_porc')),",
+                        "          activo = toLong(byName('activo'))) ~> MapDrifted1",
+                        "MapDrifted1 aggregate(groupBy(razon_social,",
+                        "          tipo_cliente,",
+                        "          ciudad_principal,",
+                        "          sla_entrega_horas,",
+                        "          penalidad_porc,",
+                        "          activo),",
+                        "     id_remitente = first(id_remitente)) ~> aggregate1",
+                        "aggregate1 derive(sla_entrega_horas = coalesce(sla_entrega_horas, 24),",
+                        "          penalidad_porc = coalesce(penalidad_porc, 5),",
+                        "          razon_social = sha2(256, coalesce(razon_social, ''))) ~> derivedColumn1",
+                        "derivedColumn1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_GPS_RUTAS')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "MapDrifted1 aggregate(groupBy(cond_id,",
+                        "          fec_ruta,",
+                        "          hra_inicio,",
+                        "          hra_fin,",
+                        "          km_recorridos,",
+                        "          num_paradas_plan,",
+                        "          num_paradas_real,",
+                        "          desviacion_ruta_km,",
+                        "          consumo_combustible),",
+                        "     id_ruta = first(id_ruta)) ~> aggregate1",
+                        "aggregate1 derive(desviacion_ruta_km = coalesce(desviacion_ruta_km, 0.0)) ~> derivedColumn1",
+                        "source1 derive(id_ruta = toLong(byName('id_ruta')),",
+                        "          cond_id = toLong(byName('cond_id')),",
+                        "          fec_ruta = toString(byName('fec_ruta')),",
+                        "          hra_inicio = toString(byName('hra_inicio')),",
+                        "          hra_fin = toString(byName('hra_fin')),",
+                        "          km_recorridos = toDouble(byName('km_recorridos')),",
+                        "          num_paradas_plan = toLong(byName('num_paradas_plan')),",
+                        "          num_paradas_real = toLong(byName('num_paradas_real')),",
+                        "          desviacion_ruta_km = toDouble(byName('desviacion_ruta_km')),",
+                        "          consumo_combustible = toDouble(byName('consumo_combustible'))) ~> MapDrifted1",
+                        "derivedColumn1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_CAL_DESTINATARIOS')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "MapDrifted1 aggregate(groupBy(cond_id,",
+                        "          fec_calificacion,",
+                        "          puntualidad,",
+                        "          cortesia,",
+                        "          comentario),",
+                        "     id_calificacion = first(id_calificacion)) ~> aggregate1",
+                        "aggregate1 derive(puntualidad = coalesce(puntualidad, 3)) ~> derivedColumn1",
+                        "source1 derive(id_calificacion = toLong(byName('id_calificacion')),",
+                        "          cond_id = toLong(byName('cond_id')),",
+                        "          fec_calificacion = toString(byName('fec_calificacion')),",
+                        "          puntualidad = toLong(byName('puntualidad')),",
+                        "          cortesia = toLong(byName('cortesia')),",
+                        "          comentario = toString(byName('comentario'))) ~> MapDrifted1",
+                        "derivedColumn1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Silver_DIR_NOVEDADES')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Bronze_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "aggregate1"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "MapDrifted1 aggregate(groupBy(id_envio,",
+                        "          fec_novedad,",
+                        "          tip_novedad,",
+                        "          desc_novedad,",
+                        "          id_agente_registro,",
+                        "          requiere_accion),",
+                        "     id_novedad = first(id_novedad)) ~> aggregate1",
+                        "aggregate1 derive(desc_novedad = coalesce(desc_novedad, '')) ~> derivedColumn1",
+                        "source1 derive(id_novedad = toLong(byName('id_novedad')),",
+                        "          id_envio = toLong(byName('id_envio')),",
+                        "          fec_novedad = toString(byName('fec_novedad')),",
+                        "          tip_novedad = toString(byName('tip_novedad')),",
+                        "          desc_novedad = toString(byName('desc_novedad')),",
+                        "          id_agente_registro = toLong(byName('id_agente_registro')),",
+                        "          requiere_accion = toBoolean(byName('requiere_accion'))) ~> MapDrifted1",
+                        "derivedColumn1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Bronze_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Gold_dim_conductores')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Gold_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "select1"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "source1 derive(nomb_cond = toString(byName('nomb_cond')),",
+                        "          apell_cond = toString(byName('apell_cond')),",
+                        "          tip_doc = toString(byName('tip_doc')),",
+                        "          num_doc_hash = toString(byName('num_doc_hash')),",
+                        "          fec_ingreso = toString(byName('fec_ingreso')),",
+                        "          id_ciudad_base = toString(byName('id_ciudad_base')),",
+                        "          tip_vehiculo = toString(byName('tip_vehiculo')),",
+                        "          cod_zona_asignada = toLong(byName('cod_zona_asignada')),",
+                        "          activo = toLong(byName('activo')),",
+                        "          calific_promedio_acum = toDouble(byName('calific_promedio_acum')),",
+                        "          cond_id = toLong(byName('cond_id'))) ~> MapDrifted1",
+                        "MapDrifted1 derive(antiguedad_anos = floor((currentDate() - toDate(fec_ingreso)) / 365),",
+                        "          tip_vehiculo_std = iif(tip_vehiculo == 'Moto', 'Moto',\r",
+                        "  iif(tip_vehiculo == 'Bicicleta', 'Bicicleta',\r",
+                        "    iif(tip_vehiculo == 'Van', 'Van',\r",
+                        "      iif(tip_vehiculo == 'Camion', 'Camion', 'Otro')\r",
+                        "    )\r",
+                        "  )\r",
+                        ")) ~> derivedColumn1",
+                        "derivedColumn1 select(mapColumn(",
+                        "          cond_id,",
+                        "          num_doc_hash,",
+                        "          antiguedad_anos,",
+                        "          tip_vehiculo_std,",
+                        "          id_ciudad_base,",
+                        "          cod_zona_asignada,",
+                        "          activo,",
+                        "          calific_promedio_acum,",
+                        "          nomb_cond,",
+                        "          apell_cond",
+                        "     ),",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true) ~> select1",
+                        "select1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Gold_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Gold_dim_remitentes')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Gold_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "select1"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "source1 derive(razon_social = toString(byName('razon_social')),",
+                        "          tipo_cliente = toString(byName('tipo_cliente')),",
+                        "          ciudad_principal = toString(byName('ciudad_principal')),",
+                        "          sla_entrega_horas = toLong(byName('sla_entrega_horas')),",
+                        "          penalidad_porc = toLong(byName('penalidad_porc')),",
+                        "          activo = toLong(byName('activo')),",
+                        "          id_remitente = toLong(byName('id_remitente'))) ~> MapDrifted1",
+                        "MapDrifted1 derive(tipo_cliente_std = iif(tipo_cliente == 'Ecommerce', 'Ecommerce',\r",
+                        "  iif(tipo_cliente == 'Farmaceutico', 'Farmaceutico',\r",
+                        "    iif(tipo_cliente == 'Retail', 'Retail',\r",
+                        "      iif(tipo_cliente == 'Telecomunicaciones', 'Telecomunicaciones',\r",
+                        "        'Otro'\r",
+                        "      )\r",
+                        "    )\r",
+                        "  )\r",
+                        "),",
+                        "          sla_entrega_horas_clean = coalesce(sla_entrega_horas, 24)) ~> derivedColumn1",
+                        "derivedColumn1 select(mapColumn(",
+                        "          id_remitente,",
+                        "          razon_social,",
+                        "          tipo_cliente_std,",
+                        "          ciudad_principal,",
+                        "          sla_entrega_horas_clean,",
+                        "          penalidad_porc,",
+                        "          activo",
+                        "     ),",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true) ~> select1",
+                        "select1 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Gold_Parquet')]"
+            ]
+        },
+        {
+            "name": "[concat(parameters('factoryName'), '/DF_Gold_dim_zonas')]",
+            "type": "Microsoft.DataFactory/factories/dataflows",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "type": "MappingDataFlow",
+                "typeProperties": {
+                    "sources": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Silver_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "source1"
+                        }
+                    ],
+                    "sinks": [
+                        {
+                            "dataset": {
+                                "referenceName": "DS_Gold_Parquet",
+                                "type": "DatasetReference"
+                            },
+                            "name": "sink1"
+                        }
+                    ],
+                    "transformations": [
+                        {
+                            "name": "MapDrifted1",
+                            "description": "Creates an explicit mapping for each drifted column"
+                        },
+                        {
+                            "name": "derivedColumn1"
+                        },
+                        {
+                            "name": "derivedColumn2"
+                        },
+                        {
+                            "name": "derivedColumn3"
+                        }
+                    ],
+                    "scriptLines": [
+                        "source(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     inferDriftedColumnTypes: true,",
+                        "     ignoreNoFilesFound: false,",
+                        "     format: 'parquet') ~> source1",
+                        "source1 derive(nom_zona = toString(byName('nom_zona')),",
+                        "          id_ciudad = toString(byName('id_ciudad')),",
+                        "          barrio_referencia = toString(byName('barrio_referencia')),",
+                        "          latitud_centroide = toDouble(byName('latitud_centroide')),",
+                        "          longitud_centroide = toDouble(byName('longitud_centroide')),",
+                        "          nivel_trafico_prom = toString(byName('nivel_trafico_prom')),",
+                        "          tip_zona = toString(byName('tip_zona')),",
+                        "          distancia_bodega_km = toDouble(byName('distancia_bodega_km')),",
+                        "          id_zona = toLong(byName('id_zona'))) ~> MapDrifted1",
+                        "MapDrifted1 derive(nivel_trafico_prom_clean = coalesce(nivel_trafico_prom, 'Medio'),",
+                        "          distancia_bodega_km_clean = coalesce(distancia_bodega_km, 20.0)) ~> derivedColumn1",
+                        "derivedColumn1 derive(trafico_val = iif(nivel_trafico_prom_clean == 'Bajo', 1,\r",
+                        "  iif(nivel_trafico_prom_clean == 'Medio', 2,\r",
+                        "    iif(nivel_trafico_prom_clean == 'Alto', 3, 2)\r",
+                        "  )\r",
+                        ")) ~> derivedColumn2",
+                        "derivedColumn2 derive(calc_dificultad = iif(toInteger(round(trafico_val + (distancia_bodega_km_clean / 40) * 2, 0)) < 1, 1,\r",
+                        "  iif(toInteger(round(trafico_val + (distancia_bodega_km_clean / 40) * 2, 0)) > 5, 5,\r",
+                        "    toInteger(round(trafico_val + (distancia_bodega_km_clean / 40) * 2, 0))\r",
+                        "  )\r",
+                        ")) ~> derivedColumn3",
+                        "derivedColumn3 sink(allowSchemaDrift: true,",
+                        "     validateSchema: false,",
+                        "     format: 'parquet',",
+                        "     umask: 0022,",
+                        "     preCommands: [],",
+                        "     postCommands: [],",
+                        "     skipDuplicateMapInputs: true,",
+                        "     skipDuplicateMapOutputs: true,",
+                        "     partitionBy('hash', 1)) ~> sink1"
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[concat(variables('factoryId'), '/datasets/DS_Silver_Parquet')]",
+                "[concat(variables('factoryId'), '/datasets/DS_Gold_Parquet')]"
+            ]
+        }
+    ]
+}

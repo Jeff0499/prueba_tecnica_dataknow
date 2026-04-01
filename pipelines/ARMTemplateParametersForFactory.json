@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "factoryName": {
+            "value": "adf-rg-prueba-tecnica-dev"
+        },
+        "LS_AzureSQL_PruebaTecnica_password": {
+            "value": ""
+        },
+        "LS_ADLS_PruebaTecnica_accountKey": {
+            "value": ""
+        },
+        "LS_AzureSQL_PruebaTecnica_properties_typeProperties_server": {
+            "value": "pruebadataknow.database.windows.net"
+        },
+        "LS_AzureSQL_PruebaTecnica_properties_typeProperties_database": {
+            "value": "prueba_tecnica"
+        },
+        "LS_AzureSQL_PruebaTecnica_properties_typeProperties_userName": {
+            "value": "CloudSA7995543c"
+        },
+        "LS_ADLS_PruebaTecnica_properties_typeProperties_url": {
+            "value": "https://strgpruebatecnicadev.dfs.core.windows.net/"
+        }
+    }
+}
