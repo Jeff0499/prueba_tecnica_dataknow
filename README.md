@@ -9,8 +9,7 @@
 Azure ofrece servicios gestionados como:
 - Azure SQL Database  
 - Data Lake Storage Gen2  
-- Data Factory  
-- Databricks  
+- Data Factory 
 
 Esto permite construir una solución **escalable, segura y con gobierno de datos integrado**.
 
@@ -26,6 +25,8 @@ Esto permite construir una solución **escalable, segura y con gobierno de datos
   - `Faker` → datos realistas
   - `hashlib` → enmascaramiento
   - `pyyaml` → configuración
+ 
+- Entorno Virtual: Spyder 6
 
 **Formato de salida:** CSV y Parquet
 
@@ -167,9 +168,9 @@ Modelo analítico:
 - **Reintentos**: 3 intentos con backoff exponencial en cada actividad.
 - **Alertas**: 
   - Fallo: se envía correo al Action Group (`ag-rg-prueba-tecnica-dev`).  
-    ![Alerta de fallo](docs/alert_failure_email.png)
+    ![Alerta de fallo](docs/failed_report.png)
   - Éxito: también se envía correo de resumen (alerta de métrica).  
     ![Reporte de éxito](docs/success_report.png)
 - **Monitoreo**: dashboard con historial de ejecuciones.  
-  ![Monitor](docs/monitor_dashboard.png)
+  ![Monitor](docs/Monitor_dashboard.png)
 - **Código**: definición del pipeline en [`pipelines/Export All Code/diagnostic.json`](pipelines/Export All Code/diagnostic.json).
